@@ -2,6 +2,7 @@ package ba.sum.fsre.projectflow.network;
 
 import android.content.Context;
 
+import ba.sum.fsre.projectflow.storage.TokenManager;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -20,8 +21,10 @@ public class RetrofitClient {
                             chain.request().newBuilder()
                                     .addHeader("apikey", Constants.ANON_KEY)
                                     .addHeader("Content-Type", "application/json")
+                                    .addHeader("Prefer", "return=representation")
                                     .build()
                     ))
+                    .addInterceptor(new AuthInterceptor(new TokenManager(context)))
                     .addInterceptor(
                             new HttpLoggingInterceptor()
                                     .setLevel(HttpLoggingInterceptor.Level.BODY)
@@ -29,7 +32,7 @@ public class RetrofitClient {
                     .build();
 
             retrofit = new Retrofit.Builder()
-                    .baseUrl(Constants.BASE_URL)
+                    .baseUrl(Constants.BASE_URL + "/")
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();

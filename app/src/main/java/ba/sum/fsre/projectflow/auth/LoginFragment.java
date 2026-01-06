@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import ba.sum.fsre.projectflow.CompleteProfileActivity;
 import ba.sum.fsre.projectflow.MainActivity;
 import ba.sum.fsre.projectflow.R;
 
@@ -41,11 +42,20 @@ public class LoginFragment extends Fragment {
         );
 
         viewModel.getAuthSuccess().observe(getViewLifecycleOwner(), success -> {
-            if (success) {
-                startActivity(new Intent(getActivity(), MainActivity.class));
-                getActivity().finish();
-            } else {
+            if (!success) {
                 Toast.makeText(getContext(), "Login failed", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        viewModel.getProfileCompleted().observe(getViewLifecycleOwner(), isCompleted -> {
+            if (viewModel.getAuthSuccess().getValue() != null && viewModel.getAuthSuccess().getValue()) {
+                if (isCompleted) {
+                    startActivity(new Intent(getActivity(), MainActivity.class));
+                    getActivity().finish();
+                } else {
+                    startActivity(new Intent(getActivity(), CompleteProfileActivity.class));
+                    getActivity().finish();
+                }
             }
         });
 
