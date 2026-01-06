@@ -26,9 +26,9 @@ public class LoginFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_login, container, false);
 
-        EditText email = view.findViewById(R.id.email);
-        EditText password = view.findViewById(R.id.password);
-        Button login = view.findViewById(R.id.loginBtn);
+        com.google.android.material.textfield.TextInputEditText email = view.findViewById(R.id.email);
+        com.google.android.material.textfield.TextInputEditText password = view.findViewById(R.id.password);
+        com.google.android.material.button.MaterialButton login = view.findViewById(R.id.loginBtn);
 
         viewModel = new ViewModelProvider(this).get(AuthViewModel.class);
 

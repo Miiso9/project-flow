@@ -24,12 +24,12 @@ public class RegisterFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_register, container, false);
 
-        EditText firstName = view.findViewById(R.id.firstName);
-        EditText lastName = view.findViewById(R.id.lastName);
-        EditText email = view.findViewById(R.id.email);
-        EditText password = view.findViewById(R.id.password);
-        EditText confirmPassword = view.findViewById(R.id.confirmPassword);
-        Button registerBtn = view.findViewById(R.id.registerBtn);
+        com.google.android.material.textfield.TextInputEditText firstName = view.findViewById(R.id.firstName);
+        com.google.android.material.textfield.TextInputEditText lastName = view.findViewById(R.id.lastName);
+        com.google.android.material.textfield.TextInputEditText email = view.findViewById(R.id.email);
+        com.google.android.material.textfield.TextInputEditText password = view.findViewById(R.id.password);
+        com.google.android.material.textfield.TextInputEditText confirmPassword = view.findViewById(R.id.confirmPassword);
+        com.google.android.material.button.MaterialButton registerBtn = view.findViewById(R.id.registerBtn);
         TextView goLoginText = view.findViewById(R.id.goLoginText);
 
         viewModel = new AuthViewModel();
