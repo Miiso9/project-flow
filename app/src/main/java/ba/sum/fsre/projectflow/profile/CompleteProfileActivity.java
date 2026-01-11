@@ -1,4 +1,4 @@
-package ba.sum.fsre.projectflow;
+package ba.sum.fsre.projectflow.profile;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
@@ -23,6 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
+import ba.sum.fsre.projectflow.MainActivity;
+import ba.sum.fsre.projectflow.R;
 import ba.sum.fsre.projectflow.storage.TokenManager;
 
 public class CompleteProfileActivity extends AppCompatActivity {
@@ -107,6 +109,8 @@ public class CompleteProfileActivity extends AppCompatActivity {
 
         viewModel.getErrorMessage().observe(this, errorMessage -> {
             if (errorMessage != null) {
+                progressBar.setVisibility(View.GONE);
+                submitBtn.setEnabled(true);
                 Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
             }
         });
@@ -119,6 +123,11 @@ public class CompleteProfileActivity extends AppCompatActivity {
 
             if (phone.isEmpty() || city.isEmpty() || dateOfBirth.isEmpty() || gender.isEmpty()) {
                 Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!phone.matches("^[0-9+]{6,15}$")) {
+                Toast.makeText(this, "Please enter a valid phone number", Toast.LENGTH_SHORT).show();
                 return;
             }
 

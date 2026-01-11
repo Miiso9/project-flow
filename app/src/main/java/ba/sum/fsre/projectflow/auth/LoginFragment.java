@@ -13,7 +13,7 @@ import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import ba.sum.fsre.projectflow.CompleteProfileActivity;
+import ba.sum.fsre.projectflow.profile.CompleteProfileActivity;
 import ba.sum.fsre.projectflow.MainActivity;
 import ba.sum.fsre.projectflow.R;
 

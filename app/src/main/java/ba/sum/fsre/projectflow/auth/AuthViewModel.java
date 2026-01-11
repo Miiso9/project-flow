@@ -129,7 +129,4 @@ public class AuthViewModel extends ViewModel {
         tm.clearTokens();
         authSuccess.postValue(false);
     }
-
-
-
 }

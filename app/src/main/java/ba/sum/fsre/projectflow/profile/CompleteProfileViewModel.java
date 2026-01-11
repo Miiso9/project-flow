@@ -1,4 +1,4 @@
-package ba.sum.fsre.projectflow;
+package ba.sum.fsre.projectflow.profile;
 
 import android.content.Context;
 
@@ -9,7 +9,6 @@ import androidx.lifecycle.ViewModel;
 import ba.sum.fsre.projectflow.model.User;
 import ba.sum.fsre.projectflow.network.RetrofitClient;
 import ba.sum.fsre.projectflow.network.SupabaseApi;
-import ba.sum.fsre.projectflow.storage.TokenManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;

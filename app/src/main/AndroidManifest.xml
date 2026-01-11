@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjectFlow">
         <activity
-            android:name=".CompleteProfileActivity"
+            android:name=".profile.CompleteProfileActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
