@@ -28,6 +28,18 @@
         <activity
             android:name=".auth.AuthActivity"
             android:exported="false" />
+        <activity
+            android:name=".team.TeamListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".team.CreateTeamActivity"
+            android:exported="false" />
+        <activity
+            android:name=".team.TeamDetailsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".team.MyInvitationsActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
