@@ -40,5 +40,10 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(this, AuthActivity.class));
             finish();
         });
+
+        Button btnManageTeams = findViewById(R.id.btnManageTeams);
+        btnManageTeams.setOnClickListener(v -> {
+            startActivity(new Intent(this, ba.sum.fsre.projectflow.team.TeamListActivity.class));
+        });
     }
 }
