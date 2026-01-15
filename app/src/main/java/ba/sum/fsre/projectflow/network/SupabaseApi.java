@@ -4,7 +4,9 @@ import java.util.List;
 
 import ba.sum.fsre.projectflow.model.AuthResponse;
 import ba.sum.fsre.projectflow.model.LoginRequest;
+import ba.sum.fsre.projectflow.model.Project;
 import ba.sum.fsre.projectflow.model.RegisterRequest;
+import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.model.Team;
 import ba.sum.fsre.projectflow.model.TeamInvitation;
 import ba.sum.fsre.projectflow.model.TeamMember;
@@ -82,4 +84,37 @@ public interface SupabaseApi {
 
     @PATCH("rest/v1/team_invitations")
     Call<Void> respondToInvitation(@Query("id") String idFilter, @Body TeamInvitation update);
+
+    @GET("rest/v1/projects")
+    Call<List<Project>> getProjects(@Query("team_id") String teamIdFilter, @Query("select") String select, @Query("order") String order);
+
+    @POST("rest/v1/projects")
+    Call<List<Project>> createProject(@Body Project project, @Header("Prefer") String prefer);
+
+    @PATCH("rest/v1/projects")
+    Call<Void> updateProject(@Query("id") String idFilter, @Body Project project);
+
+    @DELETE("rest/v1/projects")
+    Call<Void> deleteProject(@Query("id") String idFilter);
+
+    @GET("rest/v1/projects")
+    Call<List<Project>> getProjectById(@Query("id") String idFilter, @Query("select") String select);
+
+    @GET("rest/v1/tasks")
+    Call<List<Task>> getTasks(@Query("project_id") String projectIdFilter, @Query("select") String select, @Query("order") String order);
+
+    @GET("rest/v1/tasks")
+    Call<List<Task>> getTasksByAssignee(@Query("assigned_to") String assigneeFilter, @Query("select") String select, @Query("order") String order);
+
+    @GET("rest/v1/tasks")
+    Call<List<Task>> getTaskById(@Query("id") String idFilter, @Query("select") String select);
+
+    @POST("rest/v1/tasks")
+    Call<List<Task>> createTask(@Body Task task, @Header("Prefer") String prefer);
+
+    @PATCH("rest/v1/tasks")
+    Call<Void> updateTask(@Query("id") String idFilter, @Body Task task);
+
+    @DELETE("rest/v1/tasks")
+    Call<Void> deleteTask(@Query("id") String idFilter);
 }

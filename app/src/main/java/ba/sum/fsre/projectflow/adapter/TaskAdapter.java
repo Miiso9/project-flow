@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import ba.sum.fsre.projectflow.R;
@@ -18,9 +19,24 @@ import ba.sum.fsre.projectflow.model.Task;
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
     private List<Task> tasks;
+    private OnTaskClickListener listener;
+
+    public interface OnTaskClickListener {
+        void onTaskClick(Task task);
+        void onTaskLongClick(Task task);
+    }
 
     public TaskAdapter(List<Task> tasks) {
-        this.tasks = tasks;
+        this.tasks = tasks != null ? tasks : new ArrayList<>();
+    }
+
+    public TaskAdapter(List<Task> tasks, OnTaskClickListener listener) {
+        this.tasks = tasks != null ? tasks : new ArrayList<>();
+        this.listener = listener;
+    }
+
+    public void setOnTaskClickListener(OnTaskClickListener listener) {
+        this.listener = listener;
     }
 
     @NonNull
@@ -34,7 +50,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     @Override
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         Task task = tasks.get(position);
-        holder.bind(task);
+        holder.bind(task, listener);
     }
 
     @Override
@@ -43,7 +59,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     public void updateTasks(List<Task> newTasks) {
-        this.tasks = newTasks;
+        this.tasks = newTasks != null ? newTasks : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -75,20 +91,23 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             progressText = itemView.findViewById(R.id.progressText);
         }
 
-        public void bind(Task task) {
+        public void bind(Task task, OnTaskClickListener listener) {
             taskTitle.setText(task.title);
-            taskDescription.setText(task.description);
-            deadlineTime.setText(task.deadlineTime);
-            deadlineDate.setText(task.deadlineDate);
-            progressBar.setProgress(task.progress);
-            progressText.setText("Progress Project " + task.progress + "%");
+            taskDescription.setText(task.description != null ? task.description : "");
+            
+            deadlineTime.setText(task.getDisplayTime());
+            deadlineDate.setText(task.getDisplayDate());
+            
+            int progress = task.getProgressValue();
+            progressBar.setProgress(progress);
+            progressText.setText("Progress " + progress + "%");
 
-            // Set priority label
-            if ("high".equalsIgnoreCase(task.priority)) {
+            String priority = task.priority != null ? task.priority : "low";
+            if ("high".equalsIgnoreCase(priority)) {
                 priorityLabel.setText("High Priority");
                 priorityLabel.setBackgroundResource(R.drawable.bg_priority_high);
                 priorityLabel.setTextColor(itemView.getContext().getColor(R.color.priority_high_text));
-            } else if ("medium".equalsIgnoreCase(task.priority)) {
+            } else if ("medium".equalsIgnoreCase(priority)) {
                 priorityLabel.setText("Medium Priority");
                 priorityLabel.setBackgroundResource(R.drawable.bg_priority_medium);
                 priorityLabel.setTextColor(itemView.getContext().getColor(R.color.priority_medium_text));
@@ -98,8 +117,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 priorityLabel.setTextColor(itemView.getContext().getColor(R.color.priority_low_text));
             }
 
-            // Set tags visibility and colors
-            if (task.tags != null && task.tags.size() > 0) {
+            if (task.tags != null && !task.tags.isEmpty()) {
                 tagA.setVisibility(View.VISIBLE);
                 tagA.setText(task.tags.get(0));
                 tagA.setBackgroundResource(getTagBackground(task.tags.get(0)));
@@ -118,22 +136,41 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 } else {
                     tagC.setVisibility(View.GONE);
                 }
+            } else if (task.projects != null && task.projects.name != null) {
+                tagA.setVisibility(View.VISIBLE);
+                tagA.setText(task.projects.name.substring(0, 1).toUpperCase());
+                tagA.setBackgroundResource(R.drawable.bg_tag_blue);
+                tagB.setVisibility(View.GONE);
+                tagC.setVisibility(View.GONE);
             } else {
                 tagA.setVisibility(View.GONE);
                 tagB.setVisibility(View.GONE);
                 tagC.setVisibility(View.GONE);
             }
 
-            // Set menu icon or checkmark based on status
-            if ("completed".equalsIgnoreCase(task.status)) {
+            String status = task.status != null ? task.status : "pending";
+            if ("completed".equalsIgnoreCase(status)) {
                 menuIcon.setImageResource(R.drawable.ic_checkmark);
             } else {
                 menuIcon.setImageResource(R.drawable.ic_menu_dots);
             }
+
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onTaskClick(task);
+                }
+            });
+
+            itemView.setOnLongClickListener(v -> {
+                if (listener != null) {
+                    listener.onTaskLongClick(task);
+                    return true;
+                }
+                return false;
+            });
         }
 
         private int getTagBackground(String tag) {
-            // Map tags to colors: A=red, B=orange, C=blue, D=pink, E=green, F=blue
             switch (tag.toUpperCase()) {
                 case "A":
                     return R.drawable.bg_tag_red;

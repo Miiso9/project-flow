@@ -20,6 +20,7 @@ import java.util.List;
 import ba.sum.fsre.projectflow.R;
 import ba.sum.fsre.projectflow.model.TeamInvitation;
 import ba.sum.fsre.projectflow.model.TeamMember;
+import ba.sum.fsre.projectflow.project.ProjectListActivity;
 import ba.sum.fsre.projectflow.storage.TokenManager;
 import ba.sum.fsre.projectflow.viewmodel.TeamViewModel;
 
@@ -148,6 +149,14 @@ public class TeamDetailsActivity extends AppCompatActivity {
                     })
                     .setNegativeButton("Cancel", null)
                     .show();
+        });
+
+        // Projects button
+        findViewById(R.id.btnViewProjects).setOnClickListener(v -> {
+            android.content.Intent intent = new android.content.Intent(this, ProjectListActivity.class);
+            intent.putExtra("team_id", teamId);
+            intent.putExtra("team_name", teamName);
+            startActivity(intent);
         });
     }
 

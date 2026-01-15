@@ -31,4 +31,14 @@
     <color name="tag_blue">#2196F3</color>
     <color name="tag_pink">#E91E63</color>
     <color name="tag_green">#8BC34A</color>
+    
+    <!-- Project Status Colors -->
+    <color name="status_active">#E8F5E9</color>
+    <color name="status_active_text">#2E7D32</color>
+    <color name="status_completed">#E3F2FD</color>
+    <color name="status_completed_text">#1565C0</color>
+    <color name="status_on_hold">#FFF3E0</color>
+    <color name="status_on_hold_text">#E65100</color>
+    <color name="status_cancelled">#FFEBEE</color>
+    <color name="status_cancelled_text">#C62828</color>
 </resources>
