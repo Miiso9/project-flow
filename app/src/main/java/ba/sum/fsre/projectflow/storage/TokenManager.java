@@ -7,8 +7,8 @@ public class TokenManager {
 
     private static final String PREFS = "auth_prefs";
     private static final String TOKEN = "access_token";
-
     private static final String REFRESH_TOKEN = "refresh_token";
+    private static final String USER_ID = "user_id";
 
     private final SharedPreferences prefs;
 
@@ -40,8 +40,15 @@ public class TokenManager {
         SharedPreferences.Editor editor = prefs.edit();
         editor.remove("access_token");
         editor.remove("refresh_token");
+        editor.remove("user_id");
         editor.apply();
     }
 
+    public void saveUserId(String userId) {
+        prefs.edit().putString(USER_ID, userId).apply();
+    }
 
+    public String getUserId() {
+        return prefs.getString(USER_ID, null);
+    }
 }

@@ -14,6 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjectFlow">
         <activity
+            android:name=".profile.CompleteProfileActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
@@ -25,7 +28,18 @@
         <activity
             android:name=".auth.AuthActivity"
             android:exported="false" />
-
+        <activity
+            android:name=".team.TeamListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".team.CreateTeamActivity"
+            android:exported="false" />
+        <activity
+            android:name=".team.TeamDetailsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".team.MyInvitationsActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

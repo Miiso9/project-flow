@@ -3,6 +3,7 @@ package ba.sum.fsre.projectflow;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -59,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         setupRecyclerView();
         setupFilters();
         setupCalendar();
+        setupButtons();
         loadSampleTasks();
         updateHeader();
     }
@@ -98,6 +100,20 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
         return true;
+    }
+
+    private void setupButtons() {
+        Button logoutBtn = findViewById(R.id.logoutBtn);
+        logoutBtn.setOnClickListener(v -> {
+            tokenManager.clearTokens();
+            startActivity(new Intent(this, AuthActivity.class));
+            finish();
+        });
+
+        Button btnManageTeams = findViewById(R.id.btnManageTeams);
+        btnManageTeams.setOnClickListener(v -> {
+            startActivity(new Intent(this, ba.sum.fsre.projectflow.team.TeamListActivity.class));
+        });
     }
 
     private void initializeViews() {
