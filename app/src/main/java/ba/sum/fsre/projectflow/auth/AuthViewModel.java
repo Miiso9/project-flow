@@ -45,6 +45,8 @@ public class AuthViewModel extends ViewModel {
                             tm.saveToken(response.body().accessToken);
                             tm.saveRefreshToken(response.body().refreshToken);
                             
+                            RetrofitClient.resetClient();
+                            
                             if (response.body().user != null && response.body().user.id != null) {
                                 tm.saveUserId(response.body().user.id);
                                 checkProfileCompletion(context, response.body().user.id);
@@ -111,7 +113,15 @@ public class AuthViewModel extends ViewModel {
                             TokenManager tm = new TokenManager(context);
                             tm.saveToken(response.body().accessToken);
                             tm.saveRefreshToken(response.body().refreshToken);
+                            
+                            if (response.body().user != null && response.body().user.id != null) {
+                                tm.saveUserId(response.body().user.id);
+                            }
+                            
+                            RetrofitClient.resetClient();
+                            
                             authSuccess.postValue(true);
+                            profileCompleted.postValue(false);
                         } else {
                             authSuccess.postValue(false);
                         }

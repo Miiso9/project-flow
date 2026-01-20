@@ -2,4 +2,43 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <color name="background_light">#F5F5F5</color>
+    <color name="background_soft">#FAFAFA</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="primary">#6200EE</color>
+    <color name="primary_dark">#3700B3</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#9E9E9E</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="error">#B00020</color>
+    <color name="input_background">#FFFFFF</color>
+    <color name="button_disabled">#E0E0E0</color>
+    <color name="text_disabled">#BDBDBD</color>
+    
+    <!-- Task Tracking Colors -->
+    <color name="priority_high">#FFE0E0</color>
+    <color name="priority_high_text">#D32F2F</color>
+    <color name="priority_medium">#FFF9C4</color>
+    <color name="priority_medium_text">#F57C00</color>
+    <color name="priority_low">#E3F2FD</color>
+    <color name="priority_low_text">#1976D2</color>
+    <color name="calendar_selected">#FFEBEE</color>
+    <color name="progress_green">#4CAF50</color>
+    <color name="tag_red">#F44336</color>
+    <color name="tag_orange">#FF9800</color>
+    <color name="tag_blue">#2196F3</color>
+    <color name="tag_pink">#E91E63</color>
+    <color name="tag_green">#8BC34A</color>
+    
+    <!-- Project Status Colors -->
+    <color name="status_active">#E8F5E9</color>
+    <color name="status_active_text">#2E7D32</color>
+    <color name="status_completed">#E3F2FD</color>
+    <color name="status_completed_text">#1565C0</color>
+    <color name="status_on_hold">#FFF3E0</color>
+    <color name="status_on_hold_text">#E65100</color>
+    <color name="status_cancelled">#FFEBEE</color>
+    <color name="status_cancelled_text">#C62828</color>
 </resources>

@@ -39,6 +39,18 @@
                 android:text="Team Description"
                 android:textSize="16sp" />
 
+            <!-- Projects Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnViewProjects"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="View Projects"
+                android:textSize="16sp"
+                app:icon="@drawable/ic_folder"
+                app:iconGravity="start"
+                app:cornerRadius="8dp" />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"

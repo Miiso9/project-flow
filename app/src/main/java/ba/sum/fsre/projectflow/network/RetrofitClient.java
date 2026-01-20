@@ -11,8 +11,14 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class RetrofitClient {
 
     private static Retrofit retrofit;
+    private static Context appContext;
+
+    public static void resetClient() {
+        retrofit = null;
+    }
 
     public static Retrofit getClient(Context context) {
+        appContext = context.getApplicationContext();
 
         if (retrofit == null) {
 

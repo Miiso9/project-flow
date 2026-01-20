@@ -40,6 +40,15 @@
         <activity
             android:name=".team.MyInvitationsActivity"
             android:exported="false" />
+        <activity
+            android:name=".project.ProjectListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".project.CreateProjectActivity"
+            android:exported="false" />
+        <activity
+            android:name=".task.TaskDetailActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
