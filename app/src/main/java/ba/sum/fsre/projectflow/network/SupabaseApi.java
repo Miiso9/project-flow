@@ -10,6 +10,7 @@ import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.model.Team;
 import ba.sum.fsre.projectflow.model.TeamInvitation;
 import ba.sum.fsre.projectflow.model.TeamMember;
+import ba.sum.fsre.projectflow.model.TeamMemberWithDetails;
 import ba.sum.fsre.projectflow.model.User;
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -101,13 +102,17 @@ public interface SupabaseApi {
     Call<List<Project>> getProjectById(@Query("id") String idFilter, @Query("select") String select);
 
     @GET("rest/v1/tasks")
-    Call<List<Task>> getTasks(@Query("project_id") String projectIdFilter, @Query("select") String select, @Query("order") String order);
+    Call<List<Task>> getTasksByProject(@Query("project_id") String projectIdFilter,
+                                       @Query("select") String select,
+                                       @Query("order") String order);
 
     @GET("rest/v1/tasks")
-    Call<List<Task>> getTasksByAssignee(@Query("assigned_to") String assigneeFilter, @Query("select") String select, @Query("order") String order);
+    Call<List<Task>> getTasks(@Query("select") String select,
+                              @Query("order") String order);
 
     @GET("rest/v1/tasks")
-    Call<List<Task>> getTaskById(@Query("id") String idFilter, @Query("select") String select);
+    Call<List<Task>> getTaskById(@Query("id") String idFilter,
+                                 @Query("select") String select);
 
     @POST("rest/v1/tasks")
     Call<List<Task>> createTask(@Body Task task, @Header("Prefer") String prefer);
@@ -117,4 +122,20 @@ public interface SupabaseApi {
 
     @DELETE("rest/v1/tasks")
     Call<Void> deleteTask(@Query("id") String idFilter);
+
+    @GET("rest/v1/tasks")
+    Call<List<Task>> getMyTasks(@Query("assigned_to") String assignedToFilter,
+                                @Query("select") String select,
+                                @Query("order") String order);
+
+    @GET("rest/v1/team_members_with_details")
+    Call<List<TeamMemberWithDetails>> getTeamMembersWithDetails(@Query("team_id") String teamIdFilter);
+
+    @GET("rest/v1/team_members_with_details")
+    Call<List<TeamMemberWithDetails>> getTeamMembersByProject(@Query("select") String select);
+
+    @GET("rest/v1/projects")
+    Call<List<Project>> getProjectWithTeam(@Query("id") String projectIdFilter,
+                                           @Query("select") String select);
+
 }

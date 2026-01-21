@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -71,7 +72,14 @@ public class ProjectsFragment extends Fragment {
         adapter = new ProjectAdapter(new ProjectAdapter.OnProjectClickListener() {
             @Override
             public void onProjectClick(Project project) {
-                Toast.makeText(getContext(), "Project: " + project.name, Toast.LENGTH_SHORT).show();
+                // Open TaskFragment for this project
+                TaskFragment taskFragment = TaskFragment.newInstance(project.id, project.name);
+
+                // Use parent fragment manager to navigate
+                requireActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragmentContainer, taskFragment)  // Use fragmentContainer from your layout
+                        .addToBackStack("projects")
+                        .commit();
             }
 
             @Override

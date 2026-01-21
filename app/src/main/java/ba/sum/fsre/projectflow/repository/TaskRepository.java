@@ -1,7 +1,6 @@
 package ba.sum.fsre.projectflow.repository;
 
 import java.util.List;
-
 import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.network.SupabaseApi;
 import retrofit2.Call;
@@ -20,50 +19,69 @@ public class TaskRepository {
         void onError(String error);
     }
 
-    public void getTasksForProject(String projectId, DataCallback<List<Task>> callback) {
-        api.getTasks("eq." + projectId, "*,projects(*)", "created_at.desc").enqueue(new Callback<List<Task>>() {
-            @Override
-            public void onResponse(Call<List<Task>> call, Response<List<Task>> response) {
-                if (response.isSuccessful()) {
-                    callback.onSuccess(response.body());
-                } else {
-                    try {
-                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "Unknown error";
-                        callback.onError("Failed to fetch tasks: " + response.code() + " - " + errorBody);
-                    } catch (Exception e) {
-                        callback.onError("Failed to fetch tasks: " + response.code());
+    public void getTasksByProject(String projectId, DataCallback<List<Task>> callback) {
+        String select = "*,assignedUser:users!tasks_assigned_to_fkey(*)";
+        api.getTasksByProject("eq." + projectId, select, "created_at.desc")
+                .enqueue(new Callback<List<Task>>() {
+                    @Override
+                    public void onResponse(Call<List<Task>> call, Response<List<Task>> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            try {
+                                String errorBody = response.errorBody() != null ? response.errorBody().string() : "Unknown error";
+                                callback.onError("Failed to fetch tasks: " + response.code() + " - " + errorBody);
+                            } catch (Exception e) {
+                                callback.onError("Failed to fetch tasks: " + response.code());
+                            }
+                        }
                     }
-                }
-            }
 
-            @Override
-            public void onFailure(Call<List<Task>> call, Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
+                    @Override
+                    public void onFailure(Call<List<Task>> call, Throwable t) {
+                        callback.onError("Network error: " + t.getMessage());
+                    }
+                });
     }
 
-    public void getTasksAssignedToUser(String userId, DataCallback<List<Task>> callback) {
-        api.getTasksByAssignee("eq." + userId, "*,projects(*)", "due_date.asc").enqueue(new Callback<List<Task>>() {
-            @Override
-            public void onResponse(Call<List<Task>> call, Response<List<Task>> response) {
-                if (response.isSuccessful()) {
-                    callback.onSuccess(response.body());
-                } else {
-                    try {
-                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "Unknown error";
-                        callback.onError("Failed to fetch tasks: " + response.code() + " - " + errorBody);
-                    } catch (Exception e) {
-                        callback.onError("Failed to fetch tasks: " + response.code());
+    public void getMyTasks(String userId, DataCallback<List<Task>> callback) {
+        String select = "*,project:projects!tasks_project_id_fkey(name),assignedUser:users!tasks_assigned_to_fkey(*)";
+        api.getMyTasks("eq." + userId, select, "due_date.asc,priority.desc")
+                .enqueue(new Callback<List<Task>>() {
+                    @Override
+                    public void onResponse(Call<List<Task>> call, Response<List<Task>> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError("Failed to fetch your tasks");
+                        }
                     }
-                }
-            }
 
-            @Override
-            public void onFailure(Call<List<Task>> call, Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
+                    @Override
+                    public void onFailure(Call<List<Task>> call, Throwable t) {
+                        callback.onError("Network error: " + t.getMessage());
+                    }
+                });
+    }
+
+    public void getTaskById(String taskId, DataCallback<Task> callback) {
+        String select = "*,assignedUser:users!tasks_assigned_to_fkey(*)";
+        api.getTaskById("eq." + taskId, select)
+                .enqueue(new Callback<List<Task>>() {
+                    @Override
+                    public void onResponse(Call<List<Task>> call, Response<List<Task>> response) {
+                        if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                            callback.onSuccess(response.body().get(0));
+                        } else {
+                            callback.onError("Task not found");
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<List<Task>> call, Throwable t) {
+                        callback.onError("Network error: " + t.getMessage());
+                    }
+                });
     }
 
     public void createTask(Task task, DataCallback<Task> callback) {
@@ -130,24 +148,6 @@ public class TaskRepository {
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
-    }
-
-    public void getTaskById(String taskId, DataCallback<Task> callback) {
-        api.getTaskById("eq." + taskId, "*,projects(*)").enqueue(new Callback<List<Task>>() {
-            @Override
-            public void onResponse(Call<List<Task>> call, Response<List<Task>> response) {
-                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    callback.onSuccess(response.body().get(0));
-                } else {
-                    callback.onError("Task not found");
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<Task>> call, Throwable t) {
                 callback.onError("Network error: " + t.getMessage());
             }
         });
