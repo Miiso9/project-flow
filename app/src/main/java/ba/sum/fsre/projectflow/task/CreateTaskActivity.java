@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ public class CreateTaskActivity extends AppCompatActivity {
 
     private TextInputEditText titleInput, descriptionInput, dueDateInput, estimatedHoursInput;
     private AutoCompleteTextView assignedToInput, statusInput, priorityInput;
+    private TextInputLayout assignedToLayout, statusLayout, priorityLayout;
     private Button createButton;
     private TaskViewModel viewModel;
     private String projectId;
@@ -67,6 +69,7 @@ public class CreateTaskActivity extends AppCompatActivity {
         setupViewModel();
         setupDropdowns();
         setupDatePicker();
+        setupClickListeners();
         loadProjectAndTeamMembers();
 
         if (getSupportActionBar() != null) {
@@ -85,6 +88,11 @@ public class CreateTaskActivity extends AppCompatActivity {
         dueDateInput = findViewById(R.id.dueDateInput);
         estimatedHoursInput = findViewById(R.id.estimatedHoursInput);
         createButton = findViewById(R.id.createButton);
+
+        // Get TextInputLayouts
+        assignedToLayout = findViewById(R.id.assignedToLayout);
+        statusLayout = findViewById(R.id.statusLayout);
+        priorityLayout = findViewById(R.id.priorityLayout);
 
         createButton.setOnClickListener(v -> createTask());
     }
@@ -129,6 +137,33 @@ public class CreateTaskActivity extends AppCompatActivity {
         );
         priorityInput.setAdapter(priorityAdapter);
         priorityInput.setText(priorityOptions[1], false);
+    }
+
+    private void setupClickListeners() {
+        // Set click listeners for dropdowns to show dropdown when clicked
+        assignedToLayout.setEndIconOnClickListener(v -> {
+            assignedToInput.showDropDown();
+        });
+
+        assignedToLayout.setOnClickListener(v -> {
+            assignedToInput.showDropDown();
+        });
+
+        statusLayout.setEndIconOnClickListener(v -> {
+            statusInput.showDropDown();
+        });
+
+        statusLayout.setOnClickListener(v -> {
+            statusInput.showDropDown();
+        });
+
+        priorityLayout.setEndIconOnClickListener(v -> {
+            priorityInput.showDropDown();
+        });
+
+        priorityLayout.setOnClickListener(v -> {
+            priorityInput.showDropDown();
+        });
     }
 
     private void setupDatePicker() {
@@ -205,6 +240,10 @@ public class CreateTaskActivity extends AppCompatActivity {
                     displayNameToUserIdMap.clear();
                     List<String> memberDisplayNames = new ArrayList<>();
 
+                    // Add "Unassigned" option
+                    memberDisplayNames.add("Unassigned");
+                    displayNameToUserIdMap.put("Unassigned", null);
+
                     for (TeamMemberWithDetails teamMember : response.body()) {
                         teamMembers.add(teamMember);
                         String displayName = teamMember.getFullName() + " (" + teamMember.email + ")";
@@ -225,23 +264,17 @@ public class CreateTaskActivity extends AppCompatActivity {
                         String selectedDisplayName = adapter.getItem(position);
                         String selectedUserId = displayNameToUserIdMap.get(selectedDisplayName);
                         assignedToInput.setTag(selectedUserId);
-
-                        // Also store the selected team member object for reference
-                        for (TeamMemberWithDetails member : teamMembers) {
-                            if (member.userId.equals(selectedUserId)) {
-                                // You can store additional info if needed
-                                break;
-                            }
-                        }
                     });
+
+                    // Set default to "Unassigned"
+                    assignedToInput.setText("Unassigned", false);
 
                     // Show count of loaded members
                     if (!memberDisplayNames.isEmpty()) {
-                        Toast.makeText(CreateTaskActivity.this,
-                                "Loaded " + memberDisplayNames.size() + " team members",
-                                Toast.LENGTH_SHORT).show();
-                    } else {
-                        assignedToInput.setHint("No team members available");
+                        // Toast is optional, can remove if not needed
+                        // Toast.makeText(CreateTaskActivity.this,
+                        //     "Loaded " + (memberDisplayNames.size() - 1) + " team members",
+                        //     Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     Toast.makeText(CreateTaskActivity.this,
@@ -268,6 +301,11 @@ public class CreateTaskActivity extends AppCompatActivity {
         // Get assigned user ID from tag or null if not selected
         String assignedTo = assignedToInput.getTag() != null ?
                 assignedToInput.getTag().toString() : null;
+
+        // If "Unassigned" is selected, set to null
+        if ("Unassigned".equals(assignedToInput.getText().toString())) {
+            assignedTo = null;
+        }
 
         // Validation
         if (title.isEmpty()) {

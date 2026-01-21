@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ public class EditTaskActivity extends AppCompatActivity {
 
     private TextInputEditText titleInput, descriptionInput, dueDateInput, estimatedHoursInput;
     private AutoCompleteTextView assignedToInput, statusInput, priorityInput;
+    private TextInputLayout assignedToLayout, statusLayout, priorityLayout;
     private Button updateButton;
     private TaskViewModel viewModel;
     private Task task;
@@ -64,8 +66,8 @@ public class EditTaskActivity extends AppCompatActivity {
         setupViewModel();
         setupDropdowns();
         setupDatePicker();
+        setupClickListeners();
         loadProjectAndTeamMembers();
-        populateForm();
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Edit Task");
@@ -82,6 +84,11 @@ public class EditTaskActivity extends AppCompatActivity {
         dueDateInput = findViewById(R.id.dueDateInput);
         estimatedHoursInput = findViewById(R.id.estimatedHoursInput);
         updateButton = findViewById(R.id.createButton);
+
+        // Get TextInputLayouts
+        assignedToLayout = findViewById(R.id.assignedToLayout);
+        statusLayout = findViewById(R.id.statusLayout);
+        priorityLayout = findViewById(R.id.priorityLayout);
 
         updateButton.setText("Update Task");
         updateButton.setOnClickListener(v -> updateTask());
@@ -127,6 +134,33 @@ public class EditTaskActivity extends AppCompatActivity {
         priorityInput.setAdapter(priorityAdapter);
     }
 
+    private void setupClickListeners() {
+        // Set click listeners for dropdowns to show dropdown when clicked
+        assignedToLayout.setEndIconOnClickListener(v -> {
+            assignedToInput.showDropDown();
+        });
+
+        assignedToLayout.setOnClickListener(v -> {
+            assignedToInput.showDropDown();
+        });
+
+        statusLayout.setEndIconOnClickListener(v -> {
+            statusInput.showDropDown();
+        });
+
+        statusLayout.setOnClickListener(v -> {
+            statusInput.showDropDown();
+        });
+
+        priorityLayout.setEndIconOnClickListener(v -> {
+            priorityInput.showDropDown();
+        });
+
+        priorityLayout.setOnClickListener(v -> {
+            priorityInput.showDropDown();
+        });
+    }
+
     private void setupDatePicker() {
         dueDateInput.setOnClickListener(v -> showDatePicker());
         dueDateInput.setOnFocusChangeListener((v, hasFocus) -> {
@@ -134,6 +168,16 @@ public class EditTaskActivity extends AppCompatActivity {
                 showDatePicker();
             }
         });
+
+        // Parse existing due date if available
+        if (task.dueDate != null && !task.dueDate.isEmpty()) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                dueDateCalendar.setTime(sdf.parse(task.dueDate));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void showDatePicker() {
@@ -157,6 +201,7 @@ public class EditTaskActivity extends AppCompatActivity {
     private void loadProjectAndTeamMembers() {
         if (task == null || task.projectId == null) {
             Toast.makeText(this, "Task project not found", Toast.LENGTH_SHORT).show();
+            populateForm(); // Still populate form with basic data
             return;
         }
 
@@ -178,10 +223,12 @@ public class EditTaskActivity extends AppCompatActivity {
                     } else {
                         Toast.makeText(EditTaskActivity.this,
                                 "Project team not found", Toast.LENGTH_SHORT).show();
+                        populateForm();
                     }
                 } else {
                     Toast.makeText(EditTaskActivity.this,
                             "Failed to load project", Toast.LENGTH_SHORT).show();
+                    populateForm();
                 }
             }
 
@@ -189,6 +236,7 @@ public class EditTaskActivity extends AppCompatActivity {
             public void onFailure(Call<List<Project>> call, Throwable t) {
                 Toast.makeText(EditTaskActivity.this,
                         "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                populateForm();
             }
         });
     }
@@ -205,6 +253,10 @@ public class EditTaskActivity extends AppCompatActivity {
                     teamMembers.clear();
                     displayNameToUserIdMap.clear();
                     List<String> memberDisplayNames = new ArrayList<>();
+
+                    // Add "Unassigned" option
+                    memberDisplayNames.add("Unassigned");
+                    displayNameToUserIdMap.put("Unassigned", null);
 
                     for (TeamMemberWithDetails teamMember : response.body()) {
                         teamMembers.add(teamMember);
@@ -228,30 +280,12 @@ public class EditTaskActivity extends AppCompatActivity {
                         assignedToInput.setTag(selectedUserId);
                     });
 
-                    // Pre-select the current assigned user
-                    if (task.assignedUser != null) {
-                        for (int i = 0; i < teamMembers.size(); i++) {
-                            TeamMemberWithDetails member = teamMembers.get(i);
-                            if (member.userId.equals(task.assignedTo)) {
-                                String displayName = member.getFullName() + " (" + member.email + ")";
-                                assignedToInput.setText(displayName, false);
-                                assignedToInput.setTag(member.userId);
-                                break;
-                            }
-                        }
-                    }
-
-                    // Show count of loaded members
-                    if (!memberDisplayNames.isEmpty()) {
-                        Toast.makeText(EditTaskActivity.this,
-                                "Loaded " + memberDisplayNames.size() + " team members",
-                                Toast.LENGTH_SHORT).show();
-                    } else {
-                        assignedToInput.setHint("No team members available");
-                    }
+                    // Now populate form after adapter is set
+                    populateForm();
                 } else {
                     Toast.makeText(EditTaskActivity.this,
                             "Failed to load team members", Toast.LENGTH_SHORT).show();
+                    populateForm();
                 }
             }
 
@@ -259,6 +293,7 @@ public class EditTaskActivity extends AppCompatActivity {
             public void onFailure(Call<List<TeamMemberWithDetails>> call, Throwable t) {
                 Toast.makeText(EditTaskActivity.this,
                         "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                populateForm();
             }
         });
     }
@@ -283,9 +318,20 @@ public class EditTaskActivity extends AppCompatActivity {
             estimatedHoursInput.setText(String.valueOf(task.estimatedHours));
         }
 
-        // Store the current assigned user ID
-        if (task.assignedTo != null) {
+        // Set assigned user if available
+        if (task.assignedUser != null && task.assignedUser.email != null) {
+            String displayName = task.assignedUser.first_name + " " + task.assignedUser.last_name +
+                    " (" + task.assignedUser.email + ")";
+            assignedToInput.setText(displayName, false);
             assignedToInput.setTag(task.assignedTo);
+        } else if (task.assignedTo != null) {
+            // If we have assignedTo but no user details, show "Unknown"
+            assignedToInput.setText("Unknown", false);
+            assignedToInput.setTag(task.assignedTo);
+        } else {
+            // Unassigned
+            assignedToInput.setText("Unassigned", false);
+            assignedToInput.setTag(null);
         }
     }
 
@@ -300,6 +346,11 @@ public class EditTaskActivity extends AppCompatActivity {
         // Get assigned user ID from tag or keep the original if not changed
         String assignedTo = assignedToInput.getTag() != null ?
                 assignedToInput.getTag().toString() : task.assignedTo;
+
+        // If "Unassigned" is selected, set to null
+        if ("Unassigned".equals(assignedToInput.getText().toString())) {
+            assignedTo = null;
+        }
 
         // Validation
         if (title.isEmpty()) {
