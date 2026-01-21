@@ -6,9 +6,11 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.textfield.TextInputEditText;
@@ -37,8 +39,9 @@ public class EditTaskActivity extends AppCompatActivity {
 
     private TextInputEditText titleInput, descriptionInput, dueDateInput, estimatedHoursInput;
     private AutoCompleteTextView assignedToInput, statusInput, priorityInput;
-    private TextInputLayout assignedToLayout, statusLayout, priorityLayout;
+    private TextInputLayout assignedToLayout, statusLayout, priorityLayout, dueDateLayout;
     private Button updateButton;
+    private Button cancelButton;
     private TaskViewModel viewModel;
     private Task task;
     private Calendar dueDateCalendar = Calendar.getInstance();
@@ -63,16 +66,12 @@ public class EditTaskActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupToolbar();
         setupViewModel();
         setupDropdowns();
         setupDatePicker();
         setupClickListeners();
         loadProjectAndTeamMembers();
-
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Edit Task");
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        }
     }
 
     private void initViews() {
@@ -84,14 +83,32 @@ public class EditTaskActivity extends AppCompatActivity {
         dueDateInput = findViewById(R.id.dueDateInput);
         estimatedHoursInput = findViewById(R.id.estimatedHoursInput);
         updateButton = findViewById(R.id.createButton);
+        cancelButton = findViewById(R.id.cancelButton);
 
         // Get TextInputLayouts
         assignedToLayout = findViewById(R.id.assignedToLayout);
         statusLayout = findViewById(R.id.statusLayout);
         priorityLayout = findViewById(R.id.priorityLayout);
+        dueDateLayout = findViewById(R.id.dueDateLayout);
+
+        // Update UI for editing
+        TextView formTitle = findViewById(R.id.formTitle);
+        TextView formSubtitle = findViewById(R.id.formSubtitle);
+        formTitle.setText("Edit Task");
+        formSubtitle.setText("Update the task details");
 
         updateButton.setText("Update Task");
         updateButton.setOnClickListener(v -> updateTask());
+        cancelButton.setOnClickListener(v -> finish());
+    }
+
+    private void setupToolbar() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("Edit Task");
+        }
     }
 
     private void setupViewModel() {
@@ -158,6 +175,11 @@ public class EditTaskActivity extends AppCompatActivity {
 
         priorityLayout.setOnClickListener(v -> {
             priorityInput.showDropDown();
+        });
+
+        // Date picker icon click listener
+        dueDateLayout.setEndIconOnClickListener(v -> {
+            showDatePicker();
         });
     }
 
