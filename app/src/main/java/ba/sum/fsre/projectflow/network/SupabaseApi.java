@@ -5,6 +5,7 @@ import java.util.List;
 import ba.sum.fsre.projectflow.model.AuthResponse;
 import ba.sum.fsre.projectflow.model.LoginRequest;
 import ba.sum.fsre.projectflow.model.Project;
+import ba.sum.fsre.projectflow.model.RefreshTokenRequest;
 import ba.sum.fsre.projectflow.model.RegisterRequest;
 import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.model.Team;
@@ -25,6 +26,9 @@ public interface SupabaseApi {
 
     @POST("auth/v1/token?grant_type=password")
     Call<AuthResponse> login(@Body LoginRequest body);
+
+    @POST("auth/v1/token?grant_type=refresh_token")
+    Call<AuthResponse> refreshToken(@Body RefreshTokenRequest body);
 
     @POST("auth/v1/signup")
     Call<AuthResponse> register(@Body RegisterRequest body);

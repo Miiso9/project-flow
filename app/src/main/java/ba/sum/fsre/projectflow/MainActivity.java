@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
             tokenManager = new TokenManager(this);
         }
 
-        if (tokenManager.getToken() == null) {
+        if (!tokenManager.hasValidSession()) {
             startActivity(new Intent(this, AuthActivity.class));
             finish();
             return false;

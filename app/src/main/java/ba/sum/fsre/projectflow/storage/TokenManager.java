@@ -51,4 +51,9 @@ public class TokenManager {
     public String getUserId() {
         return prefs.getString(USER_ID, null);
     }
+
+    public boolean hasValidSession() {
+        return getToken() != null && getRefreshToken() != null;
+    }
+
 }

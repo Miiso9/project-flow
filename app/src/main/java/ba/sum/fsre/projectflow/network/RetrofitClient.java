@@ -30,7 +30,7 @@ public class RetrofitClient {
                                     .addHeader("Prefer", "return=representation")
                                     .build()
                     ))
-                    .addInterceptor(new AuthInterceptor(new TokenManager(context)))
+                    .addInterceptor(new AuthInterceptor(context))
                     .addInterceptor(
                             new HttpLoggingInterceptor()
                                     .setLevel(HttpLoggingInterceptor.Level.BODY)
