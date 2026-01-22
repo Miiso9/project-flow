@@ -305,6 +305,17 @@ public class EditTaskActivity extends AppCompatActivity {
         if (!estimatedHoursStr.isEmpty()) {
             try {
                 estimatedHours = Double.parseDouble(estimatedHoursStr);
+
+                if (estimatedHours < 0) {
+                    estimatedHoursInput.setError("Must be positive");
+                    return;
+                }
+
+                if (estimatedHours >= 100) {
+                    estimatedHoursInput.setError("Hours must be less than 100");
+                    return;
+                }
+
             } catch (NumberFormatException e) {
                 estimatedHoursInput.setError("Invalid number format");
                 return;

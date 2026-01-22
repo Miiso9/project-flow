@@ -30,7 +30,6 @@ public class TaskDetailActivity extends AppCompatActivity {
     private Task task;
     private String projectName = "Unknown Project";
 
-    // Views
     private Toolbar toolbar;
     private ProgressBar progressBar;
     private TextView priorityLabel, taskTitle, projectNameTextView, taskDescription;
