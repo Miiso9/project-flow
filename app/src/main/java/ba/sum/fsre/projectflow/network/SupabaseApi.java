@@ -3,6 +3,7 @@ package ba.sum.fsre.projectflow.network;
 import java.util.List;
 
 import ba.sum.fsre.projectflow.model.AuthResponse;
+import ba.sum.fsre.projectflow.model.Comment;
 import ba.sum.fsre.projectflow.model.LoginRequest;
 import ba.sum.fsre.projectflow.model.Project;
 import ba.sum.fsre.projectflow.model.RefreshTokenRequest;
@@ -144,5 +145,18 @@ public interface SupabaseApi {
     @GET("rest/v1/projects")
     Call<List<Project>> getProjectWithTeam(@Query("id") String projectIdFilter,
                                            @Query("select") String select);
+
+    @GET("rest/v1/comments")
+    Call<List<Comment>> getCommentsForTask(
+            @Query("task_id") String taskIdFilter,
+            @Query("select") String select,
+            @Query("order") String order
+    );
+
+    @POST("rest/v1/comments")
+    Call<List<Comment>> createComment(@Body Comment comment, @Header("Prefer") String prefer);
+
+    @DELETE("rest/v1/comments")
+    Call<Void> deleteComment(@Query("id") String idFilter);
 
 }

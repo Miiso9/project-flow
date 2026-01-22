@@ -4,16 +4,26 @@ import android.app.Application;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+
+import ba.sum.fsre.projectflow.model.Comment;
 import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.network.RetrofitClient;
 import ba.sum.fsre.projectflow.network.SupabaseApi;
+import ba.sum.fsre.projectflow.repository.CommentRepository;
 import ba.sum.fsre.projectflow.repository.TaskRepository;
 import ba.sum.fsre.projectflow.storage.TokenManager;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import java.util.List;
 
 public class TaskViewModel extends AndroidViewModel {
     private TaskRepository repository;
+    private CommentRepository commentRepository;
+    private SupabaseApi api;
+
     private MutableLiveData<List<Task>> tasks = new MutableLiveData<>();
     private MutableLiveData<Task> taskDetails = new MutableLiveData<>();
     private MutableLiveData<Boolean> loading = new MutableLiveData<>();
@@ -21,11 +31,14 @@ public class TaskViewModel extends AndroidViewModel {
     private MutableLiveData<Boolean> navigateBack = new MutableLiveData<>();
     private MutableLiveData<Boolean> operationSuccess = new MutableLiveData<>();
 
+    private MutableLiveData<List<Comment>> commentsList = new MutableLiveData<>();
+
     public TaskViewModel(Application application) {
         super(application);
         TokenManager tokenManager = new TokenManager(application);
-        SupabaseApi api = RetrofitClient.getClient(application).create(SupabaseApi.class);
+        api = RetrofitClient.getClient(application).create(SupabaseApi.class);
         repository = new TaskRepository(api);
+        commentRepository = new CommentRepository(api);
     }
 
     public LiveData<List<Task>> getTasks() { return tasks; }
@@ -34,6 +47,7 @@ public class TaskViewModel extends AndroidViewModel {
     public LiveData<String> getError() { return error; }
     public LiveData<Boolean> getNavigateBack() { return navigateBack; }
     public LiveData<Boolean> getOperationSuccess() { return operationSuccess; }
+    public LiveData<List<Comment>> getComments() { return commentsList; }
 
     public void loadTasks(String projectId) {
         loading.setValue(true);
@@ -183,6 +197,59 @@ public class TaskViewModel extends AndroidViewModel {
             public void onError(String errorMsg) {
                 loading.setValue(false);
                 error.setValue(errorMsg);
+            }
+        });
+    }
+
+
+    public void loadComments(String taskId) {
+        commentRepository.getComments(taskId, new CommentRepository.DataCallback<List<Comment>>() {
+            @Override
+            public void onSuccess(List<Comment> data) {
+                commentsList.setValue(data);
+            }
+
+            @Override
+            public void onError(String errorMsg) {
+                error.setValue(errorMsg);
+            }
+        });
+    }
+
+    public void addComment(Comment comment) {
+        loading.setValue(true);
+        commentRepository.createComment(comment, new CommentRepository.DataCallback<Comment>() {
+            @Override
+            public void onSuccess(Comment data) {
+                loading.setValue(false);
+                loadComments(comment.taskId);
+            }
+
+            @Override
+            public void onError(String errorMsg) {
+                loading.setValue(false);
+                error.setValue(errorMsg);
+            }
+        });
+    }
+
+    public void deleteComment(String commentId, String taskId) {
+        loading.setValue(true);
+        api.deleteComment("eq." + commentId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                loading.setValue(false);
+                if (response.isSuccessful()) {
+                    loadComments(taskId);
+                } else {
+                    error.setValue("Failed to delete comment");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                loading.setValue(false);
+                error.setValue("Network error: " + t.getMessage());
             }
         });
     }

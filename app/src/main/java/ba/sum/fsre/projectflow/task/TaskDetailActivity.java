@@ -1,23 +1,33 @@
 package ba.sum.fsre.projectflow.task;
 
+import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
+import android.os.Bundle; // Removed SharedPreferences import
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import ba.sum.fsre.projectflow.R;
+import ba.sum.fsre.projectflow.comment.CommentAdapter;
+import ba.sum.fsre.projectflow.model.Comment;
 import ba.sum.fsre.projectflow.model.Project;
 import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.network.RetrofitClient;
 import ba.sum.fsre.projectflow.network.SupabaseApi;
+import ba.sum.fsre.projectflow.storage.TokenManager; // Import TokenManager
 import ba.sum.fsre.projectflow.viewmodel.TaskViewModel;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -36,6 +46,13 @@ public class TaskDetailActivity extends AppCompatActivity {
     private TextView dueDate, statusLabel, estimatedHours, progressText;
     private Button btnMarkComplete, btnEdit;
 
+    private RecyclerView recyclerComments;
+    private EditText etComment;
+    private ImageButton btnSendComment;
+    private CommentAdapter commentAdapter;
+    private String currentUserId;
+    private TokenManager tokenManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,11 +65,15 @@ public class TaskDetailActivity extends AppCompatActivity {
             return;
         }
 
+        tokenManager = new TokenManager(this);
+        currentUserId = tokenManager.getUserId();
+
         initViews();
         setupToolbar();
         setupViewModel();
         fetchProjectName();
         setupButtons();
+        setupComments();
     }
 
     private void initViews() {
@@ -68,6 +89,10 @@ public class TaskDetailActivity extends AppCompatActivity {
         progressText = findViewById(R.id.progressText);
         btnMarkComplete = findViewById(R.id.btnMarkComplete);
         btnEdit = findViewById(R.id.btnEdit);
+
+        recyclerComments = findViewById(R.id.recyclerComments);
+        etComment = findViewById(R.id.etComment);
+        btnSendComment = findViewById(R.id.btnSendComment);
 
         progressBar.setVisibility(View.GONE);
     }
@@ -95,12 +120,13 @@ public class TaskDetailActivity extends AppCompatActivity {
                 progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
                 if (btnMarkComplete != null) btnMarkComplete.setEnabled(!isLoading);
                 if (btnEdit != null) btnEdit.setEnabled(!isLoading);
+                if (btnSendComment != null) btnSendComment.setEnabled(!isLoading);
             }
         });
 
         viewModel.getOperationSuccess().observe(this, success -> {
             if (success != null && success) {
-                Toast.makeText(this, "Task updated successfully", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Operation successful", Toast.LENGTH_SHORT).show();
                 loadTaskDetails();
             }
         });
@@ -109,6 +135,46 @@ public class TaskDetailActivity extends AppCompatActivity {
             if (error != null && !error.isEmpty()) {
                 Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
             }
+        });
+
+        viewModel.getComments().observe(this, comments -> {
+            if (comments != null) {
+                commentAdapter.setComments(comments);
+            }
+        });
+    }
+
+    private void setupComments() {
+        commentAdapter = new CommentAdapter(currentUserId, comment -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("Delete Comment")
+                    .setMessage("Are you sure you want to delete this comment?")
+                    .setPositiveButton("Delete", (dialog, which) -> {
+                        viewModel.deleteComment(comment.id, task.id);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
+
+        recyclerComments.setLayoutManager(new LinearLayoutManager(this));
+        recyclerComments.setAdapter(commentAdapter);
+        recyclerComments.setNestedScrollingEnabled(false);
+
+        btnSendComment.setOnClickListener(v -> {
+            String content = etComment.getText().toString().trim();
+            if (content.isEmpty()) return;
+
+            if (currentUserId == null) {
+                Toast.makeText(this, "You must be logged in to comment (ID not found)", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Comment newComment = new Comment(task.id, currentUserId, content);
+            viewModel.addComment(newComment);
+
+            etComment.setText("");
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(etComment.getWindowToken(), 0);
         });
     }
 
@@ -254,6 +320,7 @@ public class TaskDetailActivity extends AppCompatActivity {
     private void loadTaskDetails() {
         if (task != null && task.id != null) {
             viewModel.loadTaskById(task.id);
+            viewModel.loadComments(task.id);
         }
     }
 

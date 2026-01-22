@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Locale;
 
 import ba.sum.fsre.projectflow.R;
-import ba.sum.fsre.projectflow.adapter.TaskAdapter;
+import ba.sum.fsre.projectflow.task.TaskAdapter;
 import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.task.EditTaskActivity;
 import ba.sum.fsre.projectflow.task.TaskDetailActivity;

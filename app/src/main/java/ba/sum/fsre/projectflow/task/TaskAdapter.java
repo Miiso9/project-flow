@@ -1,4 +1,4 @@
-package ba.sum.fsre.projectflow.adapter;
+package ba.sum.fsre.projectflow.task;
 
 import android.view.LayoutInflater;
 import android.view.View;
