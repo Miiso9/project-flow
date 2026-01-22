@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,6 +30,7 @@ import java.util.Locale;
 import ba.sum.fsre.projectflow.R;
 import ba.sum.fsre.projectflow.adapter.TaskAdapter;
 import ba.sum.fsre.projectflow.model.Task;
+import ba.sum.fsre.projectflow.task.EditTaskActivity;
 import ba.sum.fsre.projectflow.task.TaskDetailActivity;
 import ba.sum.fsre.projectflow.viewmodel.TaskViewModel;
 import ba.sum.fsre.projectflow.storage.TokenManager;
@@ -96,8 +98,36 @@ public class HomeFragment extends Fragment {
             public void onTaskLongClick(Task task) {
                 showTaskOptionsDialog(task);
             }
+
+            @Override
+            public void onMenuClick(View view, Task task) {
+                showPopupMenu(view, task);
+            }
         });
         tasksRecyclerView.setAdapter(taskAdapter);
+    }
+
+    private void showPopupMenu(View view, Task task) {
+        PopupMenu popup = new PopupMenu(requireContext(), view);
+
+        popup.getMenu().add(0, 1, 0, "Edit");
+        popup.getMenu().add(0, 2, 1, "Delete");
+
+        popup.setOnMenuItemClickListener(item -> {
+            String title = item.getTitle().toString();
+            if (title.equals("Edit")) {
+                Intent intent = new Intent(getActivity(), EditTaskActivity.class);
+                intent.putExtra("task", task);
+                startActivity(intent);
+                return true;
+            } else if (title.equals("Delete")) {
+                confirmDeleteTask(task);
+                return true;
+            }
+            return false;
+        });
+
+        popup.show();
     }
 
     private void showTaskOptionsDialog(Task task) {

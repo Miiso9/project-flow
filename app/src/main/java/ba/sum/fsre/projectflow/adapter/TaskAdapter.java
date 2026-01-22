@@ -20,6 +20,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public interface OnTaskClickListener {
         void onTaskClick(Task task);
         void onTaskLongClick(Task task);
+        void onMenuClick(View view, Task task);
     }
 
     public TaskAdapter(List<Task> tasks, OnTaskClickListener listener) {
@@ -47,24 +48,24 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.taskTitle.setText(task.title);
         holder.taskDescription.setText(task.description != null ? task.description : "");
 
-        // Set priority
         String priority = task.priority != null ? task.priority : "medium";
         holder.priorityLabel.setText(priority.toUpperCase());
         setPriorityBackground(holder.priorityLabel, priority);
 
-        // Set status
         String status = task.status != null ? task.status : "todo";
         holder.statusLabel.setText(getStatusDisplayName(status));
         setStatusBackground(holder.statusLabel, status);
 
-        // Set assigned user
         if (task.assignedUser != null) {
-            holder.assignedUser.setText("Assigned to: " + task.assignedUser.email);
+            String userName = task.assignedUser.email;
+            if (task.assignedUser.first_name != null && !task.assignedUser.first_name.isEmpty()) {
+                userName = task.assignedUser.first_name + " " + task.assignedUser.last_name;
+            }
+            holder.assignedUser.setText("Assigned to: " + userName);
         } else {
             holder.assignedUser.setText("Unassigned");
         }
 
-        // Set due date
         if (task.dueDate != null && !task.dueDate.isEmpty()) {
             holder.dueDate.setText(task.dueDate);
             holder.dueDateContainer.setVisibility(View.VISIBLE);
@@ -72,7 +73,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.dueDateContainer.setVisibility(View.GONE);
         }
 
-        // Set estimated hours
         if (task.estimatedHours != null && task.estimatedHours > 0) {
             holder.estimatedHours.setText("Estimated: " + task.estimatedHours + "h");
         } else {
@@ -91,6 +91,12 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 return true;
             }
             return false;
+        });
+
+        holder.menuIcon.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onMenuClick(v, task);
+            }
         });
     }
 
@@ -117,7 +123,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         textView.setBackgroundResource(backgroundRes);
-        textView.setTextColor(textView.getContext().getColor(textColorRes));
+        textView.setTextColor(textView.getContext().getResources().getColor(textColorRes, null));
     }
 
     private void setStatusBackground(TextView textView, String status) {
@@ -167,6 +173,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         TextView dueDate;
         TextView estimatedHours;
         LinearLayout dueDateContainer;
+        ImageView menuIcon;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -178,6 +185,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             dueDate = itemView.findViewById(R.id.dueDate);
             estimatedHours = itemView.findViewById(R.id.estimatedHours);
             dueDateContainer = itemView.findViewById(R.id.dueDateContainer);
+            menuIcon = itemView.findViewById(R.id.menuIcon);
         }
     }
 }

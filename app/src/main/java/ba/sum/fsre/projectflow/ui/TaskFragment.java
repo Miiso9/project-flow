@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,6 +29,7 @@ import ba.sum.fsre.projectflow.R;
 import ba.sum.fsre.projectflow.adapter.TaskAdapter;
 import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.task.CreateTaskActivity;
+import ba.sum.fsre.projectflow.task.EditTaskActivity;
 import ba.sum.fsre.projectflow.task.TaskDetailActivity;
 import ba.sum.fsre.projectflow.viewmodel.TaskViewModel;
 
@@ -115,7 +117,6 @@ public class TaskFragment extends Fragment {
 
     private void applyFilter(String filter, TextView selectedView) {
         currentFilter = filter;
-
         resetFilterStyles();
 
         selectedView.setBackgroundResource(R.drawable.bg_filter_selected);
@@ -161,10 +162,40 @@ public class TaskFragment extends Fragment {
 
             @Override
             public void onTaskLongClick(Task task) {
+                // Keep the long click dialog as an alternative
                 showTaskOptionsDialog(task);
+            }
+
+            @Override
+            public void onMenuClick(View view, Task task) {
+                // Trigger the 3-dots popup menu
+                showPopupMenu(view, task);
             }
         });
         tasksRecyclerView.setAdapter(taskAdapter);
+    }
+
+    private void showPopupMenu(View view, Task task) {
+        PopupMenu popup = new PopupMenu(requireContext(), view);
+
+        popup.getMenu().add(0, 1, 0, "Edit");
+        popup.getMenu().add(0, 2, 1, "Delete");
+
+        popup.setOnMenuItemClickListener(item -> {
+            String title = item.getTitle().toString();
+            if (title.equals("Edit")) {
+                Intent intent = new Intent(getActivity(), EditTaskActivity.class);
+                intent.putExtra("task", task);
+                startActivity(intent);
+                return true;
+            } else if (title.equals("Delete")) {
+                confirmDeleteTask(task);
+                return true;
+            }
+            return false;
+        });
+
+        popup.show();
     }
 
     private void setupFAB(View view) {
@@ -229,12 +260,14 @@ public class TaskFragment extends Fragment {
         });
 
         viewModel.getError().observe(getViewLifecycleOwner(), error -> {
-            if (error != null && !error.isEmpty()) Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+            if (error != null && !error.isEmpty()) {
+                Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+            }
         });
 
         viewModel.getOperationSuccess().observe(getViewLifecycleOwner(), success -> {
             if (success != null && success) {
-                Toast.makeText(getContext(), "Task updated", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Operation successful", Toast.LENGTH_SHORT).show();
                 loadTasks();
             }
         });
