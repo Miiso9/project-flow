@@ -28,7 +28,6 @@ import ba.sum.fsre.projectflow.model.Project;
 import ba.sum.fsre.projectflow.model.TeamMember;
 import ba.sum.fsre.projectflow.network.RetrofitClient;
 import ba.sum.fsre.projectflow.network.SupabaseApi;
-import ba.sum.fsre.projectflow.project.CreateProjectActivity;
 import ba.sum.fsre.projectflow.project.EditProjectActivity;
 import ba.sum.fsre.projectflow.project.ProjectAdapter;
 import ba.sum.fsre.projectflow.storage.TokenManager;
@@ -45,19 +44,15 @@ public class ProjectsFragment extends Fragment {
     private TextView filterAll, filterActive, filterCompleted, filterOnHold;
 
     private List<Project> allProjects = new ArrayList<>();
-
     private Map<String, String> userTeamRoles = new HashMap<>();
-
     private String currentFilter = "all";
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_projects, container, false);
-
         setupUI(view);
         setupFilters(view);
-
         return view;
     }
 
@@ -99,7 +94,6 @@ public class ProjectsFragment extends Fragment {
 
     private void showPopupMenu(View view, Project project) {
         PopupMenu popup = new PopupMenu(requireContext(), view);
-
         popup.getMenu().add(0, 1, 0, "Edit");
 
         String myRole = userTeamRoles.get(project.teamId);
@@ -126,13 +120,11 @@ public class ProjectsFragment extends Fragment {
 
     private void confirmDeleteProject(Project project) {
         String myRole = userTeamRoles.get(project.teamId);
-        if (myRole == null || !myRole.equalsIgnoreCase("owner")) {
-            return;
-        }
+        if (myRole == null || !myRole.equalsIgnoreCase("owner")) return;
 
         new AlertDialog.Builder(requireContext())
                 .setTitle("Delete Project")
-                .setMessage("Are you sure you want to delete '" + project.name + "'? This action cannot be undone.")
+                .setMessage("Are you sure you want to delete '" + project.name + "'?")
                 .setPositiveButton("Delete", (dialog, which) -> deleteProject(project))
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -191,7 +183,8 @@ public class ProjectsFragment extends Fragment {
                         }
 
                         if (tm.teams != null) {
-                            loadProjectsForTeam(tm.teams.id, pendingRequests);
+                            String teamName = tm.teams.name;
+                            loadProjectsForTeam(tm.teams.id, teamName, pendingRequests);
                         } else {
                             pendingRequests[0]--;
                             if (pendingRequests[0] == 0) {
@@ -214,14 +207,20 @@ public class ProjectsFragment extends Fragment {
         });
     }
 
-    private void loadProjectsForTeam(String teamId, final int[] pendingRequests) {
+    private void loadProjectsForTeam(String teamId, String teamName, final int[] pendingRequests) {
         SupabaseApi api = RetrofitClient.getClient(requireContext()).create(SupabaseApi.class);
 
         api.getProjects("eq." + teamId, "*", "created_at.desc").enqueue(new Callback<List<Project>>() {
             @Override
             public void onResponse(Call<List<Project>> call, Response<List<Project>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    allProjects.addAll(response.body());
+                    List<Project> fetchedProjects = response.body();
+
+                    for (Project p : fetchedProjects) {
+                        p.teamName = teamName;
+                    }
+
+                    allProjects.addAll(fetchedProjects);
                 }
 
                 pendingRequests[0]--;

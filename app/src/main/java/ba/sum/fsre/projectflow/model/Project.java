@@ -26,6 +26,8 @@ public class Project implements Serializable {
     @SerializedName("updated_at")
     public String updatedAt;
 
+    public String teamName;
+
     public Project() {}
 
     public Project(String teamId, String name, String description, String startDate, String endDate, String status) {

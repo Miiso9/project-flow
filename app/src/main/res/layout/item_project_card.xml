@@ -19,7 +19,6 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Status Label -->
         <TextView
             android:id="@+id/statusLabel"
             android:layout_width="wrap_content"
@@ -36,7 +35,30 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
-        <!-- Menu Icon -->
+        <LinearLayout
+            android:id="@+id/teamContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintStart_toEndOf="@id/statusLabel"
+            app:layout_constraintEnd_toStartOf="@id/menuIcon"
+            app:layout_constraintTop_toTopOf="@id/statusLabel"
+            app:layout_constraintBottom_toBottomOf="@id/statusLabel">
+
+            <TextView
+                android:id="@+id/teamName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Team Name"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
         <ImageView
             android:id="@+id/menuIcon"
             android:layout_width="24dp"
@@ -47,7 +69,6 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <!-- Project Name -->
         <TextView
             android:id="@+id/projectName"
             android:layout_width="0dp"
@@ -61,7 +82,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/menuIcon" />
 
-        <!-- Project Description -->
         <TextView
             android:id="@+id/projectDescription"
             android:layout_width="0dp"
@@ -76,7 +96,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <!-- Dates Container -->
         <LinearLayout
             android:id="@+id/datesContainer"
             android:layout_width="wrap_content"

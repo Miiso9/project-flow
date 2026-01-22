@@ -51,6 +51,9 @@ public interface SupabaseApi {
     @DELETE("rest/v1/teams")
     Call<Void> deleteTeam(@Query("id") String idFilter);
 
+    @GET("rest/v1/teams")
+    Call<List<Team>> getTeamById(@Query("id") String idFilter);
+
     @POST("rest/v1/team_members")
     Call<Void> addTeamMember(@Body TeamMember member);
 

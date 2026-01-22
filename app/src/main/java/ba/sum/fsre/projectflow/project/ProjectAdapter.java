@@ -61,6 +61,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         private TextView projectDescription;
         private TextView startDate;
         private TextView endDate;
+        private TextView teamName;
 
         public ProjectViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -70,6 +71,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
             projectDescription = itemView.findViewById(R.id.projectDescription);
             startDate = itemView.findViewById(R.id.startDate);
             endDate = itemView.findViewById(R.id.endDate);
+            teamName = itemView.findViewById(R.id.teamName);
         }
 
         public void bind(Project project, OnProjectClickListener listener) {
@@ -78,6 +80,12 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
 
             startDate.setText(project.startDate != null ? project.startDate : "-");
             endDate.setText(project.endDate != null ? project.endDate : "-");
+
+            if (project.teamName != null) {
+                teamName.setText(project.teamName);
+            } else {
+                teamName.setText("");
+            }
 
             String status = project.status != null ? project.status : "active";
             switch (status.toLowerCase()) {
