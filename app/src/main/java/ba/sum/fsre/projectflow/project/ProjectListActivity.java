@@ -7,6 +7,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,16 +22,24 @@ import java.util.List;
 
 import ba.sum.fsre.projectflow.R;
 import ba.sum.fsre.projectflow.model.Project;
+import ba.sum.fsre.projectflow.ui.TaskFragment; // Make sure this import is correct
 import ba.sum.fsre.projectflow.viewmodel.ProjectViewModel;
 
 public class ProjectListActivity extends AppCompatActivity {
 
     private ProjectViewModel viewModel;
     private ProjectAdapter adapter;
+
+    // UI References
     private ProgressBar progressBar;
     private LinearLayout emptyState;
     private TextView headerSubtitle;
     private TextView filterAll, filterActive, filterCompleted, filterOnHold;
+
+    // Views to toggle visibility when fragment opens
+    private View mainContentLayout;
+    private FloatingActionButton fabCreate;
+    private FrameLayout fragmentContainer;
 
     private String teamId;
     private String teamName;
@@ -47,10 +56,35 @@ public class ProjectListActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
 
+        // 1. Initialize views
+        mainContentLayout = findViewById(R.id.mainContentLayout);
+        fabCreate = findViewById(R.id.fabCreateProject);
+        fragmentContainer = findViewById(R.id.fragmentContainer);
+
         setupToolbar();
         setupUI();
         setupFilters();
         observeViewModel();
+
+        // 2. Add BackStack Listener to handle UI toggling
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                // Fragment is OPEN: Hide Activity UI, Show Fragment Container
+                mainContentLayout.setVisibility(View.GONE);
+                fabCreate.hide();
+                fragmentContainer.setVisibility(View.VISIBLE);
+            } else {
+                // Fragment is CLOSED: Show Activity UI, Hide Fragment Container
+                mainContentLayout.setVisibility(View.VISIBLE);
+                fabCreate.show();
+                fragmentContainer.setVisibility(View.GONE);
+
+                // Refresh title
+                if (getSupportActionBar() != null) {
+                    getSupportActionBar().setTitle(teamName != null ? teamName + " - Projects" : "Projects");
+                }
+            }
+        });
     }
 
     private void setupToolbar() {
@@ -64,7 +98,12 @@ public class ProjectListActivity extends AppCompatActivity {
 
     @Override
     public boolean onSupportNavigateUp() {
-        finish();
+        // Handle back button on toolbar
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStack();
+        } else {
+            finish();
+        }
         return true;
     }
 
@@ -80,11 +119,25 @@ public class ProjectListActivity extends AppCompatActivity {
 
         RecyclerView rvProjects = findViewById(R.id.rvProjects);
         rvProjects.setLayoutManager(new LinearLayoutManager(this));
-        
+
         adapter = new ProjectAdapter(new ProjectAdapter.OnProjectClickListener() {
             @Override
             public void onProjectClick(Project project) {
-                Toast.makeText(ProjectListActivity.this, "Project: " + project.name, Toast.LENGTH_SHORT).show();
+                // 3. Open TaskFragment
+                TaskFragment taskFragment = TaskFragment.newInstance(project.id, project.name);
+
+                getSupportFragmentManager().beginTransaction()
+                        .setCustomAnimations(
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out,
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out
+                        )
+                        .replace(R.id.fragmentContainer, taskFragment)
+                        .addToBackStack("projects")
+                        .commit();
+
+                // The addOnBackStackChangedListener will handle hiding the toolbar automatically
             }
 
             @Override
@@ -94,7 +147,6 @@ public class ProjectListActivity extends AppCompatActivity {
         });
         rvProjects.setAdapter(adapter);
 
-        FloatingActionButton fabCreate = findViewById(R.id.fabCreateProject);
         fabCreate.setOnClickListener(v -> {
             Intent intent = new Intent(this, CreateProjectActivity.class);
             intent.putExtra("team_id", teamId);
@@ -150,7 +202,7 @@ public class ProjectListActivity extends AppCompatActivity {
 
     private void showProjectOptionsDialog(Project project) {
         String[] options = {"Edit", "Delete"};
-        
+
         new AlertDialog.Builder(this)
                 .setTitle(project.name)
                 .setItems(options, (dialog, which) -> {
@@ -205,14 +257,10 @@ public class ProjectListActivity extends AppCompatActivity {
 
     private TextView getSelectedFilterView() {
         switch (currentFilter) {
-            case "active":
-                return filterActive;
-            case "completed":
-                return filterCompleted;
-            case "on_hold":
-                return filterOnHold;
-            default:
-                return filterAll;
+            case "active": return filterActive;
+            case "completed": return filterCompleted;
+            case "on_hold": return filterOnHold;
+            default: return filterAll;
         }
     }
 
