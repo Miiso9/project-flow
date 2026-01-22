@@ -34,7 +34,7 @@ public class DocumentRepository {
     }
 
     public void getDocuments(String taskId, DocumentCallback<List<Document>> callback) {
-        String select = "*,uploader:users(*)"; // Fetch user details too
+        String select = "*,uploader:users(*)";
         api.getDocumentsForTask("eq." + taskId, select, "uploaded_at.desc")
                 .enqueue(new Callback<List<Document>>() {
                     @Override
