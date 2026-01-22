@@ -15,7 +15,7 @@ import java.util.List;
 public class TaskViewModel extends AndroidViewModel {
     private TaskRepository repository;
     private MutableLiveData<List<Task>> tasks = new MutableLiveData<>();
-    private MutableLiveData<Task> taskDetails = new MutableLiveData<>(); // New LiveData for single task
+    private MutableLiveData<Task> taskDetails = new MutableLiveData<>();
     private MutableLiveData<Boolean> loading = new MutableLiveData<>();
     private MutableLiveData<String> error = new MutableLiveData<>();
     private MutableLiveData<Boolean> navigateBack = new MutableLiveData<>();
@@ -29,7 +29,7 @@ public class TaskViewModel extends AndroidViewModel {
     }
 
     public LiveData<List<Task>> getTasks() { return tasks; }
-    public LiveData<Task> getTaskDetails() { return taskDetails; } // New getter
+    public LiveData<Task> getTaskDetails() { return taskDetails; }
     public LiveData<Boolean> getLoading() { return loading; }
     public LiveData<String> getError() { return error; }
     public LiveData<Boolean> getNavigateBack() { return navigateBack; }
@@ -75,7 +75,7 @@ public class TaskViewModel extends AndroidViewModel {
             @Override
             public void onSuccess(Task data) {
                 loading.setValue(false);
-                taskDetails.setValue(data); // Set value to taskDetails LiveData
+                taskDetails.setValue(data);
             }
 
             @Override
@@ -101,7 +101,7 @@ public class TaskViewModel extends AndroidViewModel {
             public void onSuccess(Task data) {
                 loading.setValue(false);
                 navigateBack.setValue(true);
-                navigateBack.setValue(null); // Reset
+                navigateBack.setValue(null);
             }
 
             @Override

@@ -42,7 +42,6 @@ public class TaskDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task_detail);
 
-        // Get task from intent
         task = (Task) getIntent().getSerializableExtra("task");
         if (task == null) {
             Toast.makeText(this, "Task not found", Toast.LENGTH_SHORT).show();
@@ -71,7 +70,6 @@ public class TaskDetailActivity extends AppCompatActivity {
         btnMarkComplete = findViewById(R.id.btnMarkComplete);
         btnEdit = findViewById(R.id.btnEdit);
 
-        // Hide progress bar initially
         progressBar.setVisibility(View.GONE);
     }
 
@@ -86,7 +84,6 @@ public class TaskDetailActivity extends AppCompatActivity {
     private void setupViewModel() {
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
 
-        // Observe task details
         viewModel.getTaskDetails().observe(this, task -> {
             if (task != null) {
                 this.task = task;
@@ -94,7 +91,6 @@ public class TaskDetailActivity extends AppCompatActivity {
             }
         });
 
-        // Observe loading state
         viewModel.getLoading().observe(this, isLoading -> {
             if (isLoading != null) {
                 progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
@@ -103,11 +99,9 @@ public class TaskDetailActivity extends AppCompatActivity {
             }
         });
 
-        // Observe success/failure
         viewModel.getOperationSuccess().observe(this, success -> {
             if (success != null && success) {
                 Toast.makeText(this, "Task updated successfully", Toast.LENGTH_SHORT).show();
-                // Refresh task details
                 loadTaskDetails();
             }
         });
@@ -127,15 +121,15 @@ public class TaskDetailActivity extends AppCompatActivity {
                 public void onResponse(Call<List<Project>> call, Response<List<Project>> response) {
                     if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                         projectName = response.body().get(0).name;
-                        populateTaskDetails(); // Populate once we have project name
+                        populateTaskDetails();
                     } else {
-                        populateTaskDetails(); // Populate with default project name
+                        populateTaskDetails();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<List<Project>> call, Throwable t) {
-                    populateTaskDetails(); // Populate with default project name
+                    populateTaskDetails();
                 }
             });
         } else {
@@ -146,10 +140,8 @@ public class TaskDetailActivity extends AppCompatActivity {
     private void populateTaskDetails() {
         if (task == null) return;
 
-        // Set task title
         taskTitle.setText(task.title != null ? task.title : "Untitled Task");
 
-        // Set priority
         if (task.priority != null) {
             priorityLabel.setText(task.priority.toUpperCase());
             setPriorityBackground(priorityLabel, task.priority);
@@ -158,30 +150,25 @@ public class TaskDetailActivity extends AppCompatActivity {
             priorityLabel.setVisibility(View.GONE);
         }
 
-        // Set project name
         projectNameTextView.setText("Project: " + projectName);
         projectNameTextView.setVisibility(View.VISIBLE);
 
-        // Set description
         if (task.description != null && !task.description.isEmpty()) {
             taskDescription.setText(task.description);
         } else {
             taskDescription.setText("No description provided");
         }
 
-        // Set due date
         if (task.dueDate != null && !task.dueDate.isEmpty()) {
             dueDate.setText(task.dueDate);
         } else {
             dueDate.setText("No due date");
         }
 
-        // Set status
         if (task.status != null) {
             String statusDisplay = getStatusDisplayName(task.status);
             statusLabel.setText(statusDisplay);
 
-            // Update button text based on status
             if ("done".equalsIgnoreCase(task.status)) {
                 btnMarkComplete.setText("Reopen Task");
             } else {
@@ -189,14 +176,12 @@ public class TaskDetailActivity extends AppCompatActivity {
             }
         }
 
-        // Set estimated hours
         if (task.estimatedHours != null && task.estimatedHours > 0) {
             estimatedHours.setText(String.format("%.1f hours", task.estimatedHours));
         } else {
             estimatedHours.setText("Not estimated");
         }
 
-        // Calculate and set progress based on status
         int progress = calculateProgress(task.status);
         progressText.setText(progress + "%");
         if (progressBar != null) {
@@ -285,7 +270,6 @@ public class TaskDetailActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh task details when returning from edit
         loadTaskDetails();
     }
 }

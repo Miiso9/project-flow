@@ -37,16 +37,13 @@ public class EditProjectActivity extends AppCompatActivity {
     private ProjectViewModel viewModel;
     private Project projectToEdit;
 
-    // Status options matching your switch-case in the adapter
     private final String[] statusOptions = {"Active", "Completed", "On_Hold", "Cancelled"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Reusing the create layout
         setContentView(R.layout.activity_create_project);
 
-        // 1. Get the Project object passed from the previous screen
         if (getIntent().hasExtra("project_data")) {
             projectToEdit = (Project) getIntent().getSerializableExtra("project_data");
         } else {
@@ -72,28 +69,23 @@ public class EditProjectActivity extends AppCompatActivity {
         btnSubmit = findViewById(R.id.btnSubmit);
         progressBar = findViewById(R.id.progressBar);
 
-        // Setup Toolbar
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
 
-        // Setup Spinner Adapter
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerStatus.setAdapter(adapter);
 
-        // Date Pickers
         etStartDate.setOnClickListener(v -> showDatePicker(etStartDate));
         etEndDate.setOnClickListener(v -> showDatePicker(etEndDate));
 
-        // Submit Listener
         btnSubmit.setOnClickListener(v -> performUpdate());
     }
 
     private void setupUIForEditMode() {
-        // Change UI text to reflect "Edit" mode
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Edit Project");
         }
@@ -109,7 +101,6 @@ public class EditProjectActivity extends AppCompatActivity {
         etStartDate.setText(projectToEdit.startDate);
         etEndDate.setText(projectToEdit.endDate);
 
-        // Select the correct status in the spinner
         if (projectToEdit.status != null) {
             int spinnerPosition = getStatusIndex(projectToEdit.status);
             spinnerStatus.setSelection(spinnerPosition);
@@ -119,21 +110,18 @@ public class EditProjectActivity extends AppCompatActivity {
     private void setupViewModel() {
         viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
 
-        // Observe Loading State
         viewModel.getLoading().observe(this, isLoading -> {
             progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
             btnSubmit.setEnabled(!isLoading);
         });
 
-        // Observe Success
         viewModel.getOperationSuccess().observe(this, success -> {
             if (success) {
                 Toast.makeText(this, "Project updated successfully", Toast.LENGTH_SHORT).show();
-                finish(); // Close activity and go back
+                finish();
             }
         });
 
-        // Observe Error
         viewModel.getError().observe(this, errorMsg -> {
             if (errorMsg != null && !errorMsg.isEmpty()) {
                 Toast.makeText(this, "Error: " + errorMsg, Toast.LENGTH_LONG).show();
@@ -153,10 +141,9 @@ public class EditProjectActivity extends AppCompatActivity {
             return;
         }
 
-        // Call ViewModel update
         viewModel.updateProject(
                 this,
-                projectToEdit.id, // ID is crucial for update
+                projectToEdit.id,
                 name,
                 description,
                 startDate,
@@ -168,15 +155,11 @@ public class EditProjectActivity extends AppCompatActivity {
     private void showDatePicker(TextInputEditText targetField) {
         final Calendar c = Calendar.getInstance();
 
-        // If field already has a date, parse it to set the picker
         if (targetField.getText() != null && !targetField.getText().toString().isEmpty()) {
-            // Simple parsing logic or leave as current date if format mismatch
-            // Assuming format YYYY-MM-DD
             try {
                 String[] parts = targetField.getText().toString().split("-");
                 c.set(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]) - 1, Integer.parseInt(parts[2]));
             } catch (Exception e) {
-                // Ignore, use current date
             }
         }
 
@@ -186,7 +169,6 @@ public class EditProjectActivity extends AppCompatActivity {
 
         DatePickerDialog datePickerDialog = new DatePickerDialog(this,
                 (view, year1, monthOfYear, dayOfMonth) -> {
-                    // Format: YYYY-MM-DD (Supabase standard date format)
                     String selectedDate = String.format(Locale.US, "%04d-%02d-%02d", year1, monthOfYear + 1, dayOfMonth);
                     targetField.setText(selectedDate);
                 }, year, month, day);
@@ -199,7 +181,7 @@ public class EditProjectActivity extends AppCompatActivity {
                 return i;
             }
         }
-        return 0; // Default to first item if not found
+        return 0;
     }
 
     @Override

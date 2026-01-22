@@ -49,7 +49,6 @@ public class CreateTaskActivity extends AppCompatActivity {
     private List<TeamMemberWithDetails> teamMembers = new ArrayList<>();
     private Map<String, String> displayNameToUserIdMap = new HashMap<>();
 
-    // CHANGED: Separated Display values from Database values
     private final String[] statusDisplayOptions = {"Todo", "In Progress", "Done", "Blocked"};
     private final String[] statusValueOptions = {"todo", "in_progress", "done", "blocked"};
 
@@ -135,16 +134,14 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void setupDropdowns() {
-        // CHANGED: Use Display Options for the Adapter
         ArrayAdapter<String> statusAdapter = new ArrayAdapter<>(
                 this,
                 android.R.layout.simple_dropdown_item_1line,
                 statusDisplayOptions
         );
         statusInput.setAdapter(statusAdapter);
-        statusInput.setText(statusDisplayOptions[0], false); // Default to Todo
+        statusInput.setText(statusDisplayOptions[0], false);
 
-        // Priority dropdown
         ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(
                 this,
                 android.R.layout.simple_dropdown_item_1line,
@@ -263,9 +260,8 @@ public class CreateTaskActivity extends AppCompatActivity {
         String estimatedHoursStr = estimatedHoursInput.getText().toString().trim();
         String priority = priorityInput.getText().toString().trim();
 
-        // CHANGED: Map Display Status back to Database Value
         String selectedStatusDisplay = statusInput.getText().toString().trim();
-        String status = "todo"; // Default
+        String status = "todo";
         for (int i = 0; i < statusDisplayOptions.length; i++) {
             if (statusDisplayOptions[i].equals(selectedStatusDisplay)) {
                 status = statusValueOptions[i];

@@ -38,7 +38,6 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
     @NonNull
     @Override
     public ProjectViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Ensure this layout name matches your XML (e.g., item_project_card or item_task_project_card)
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_project_card, parent, false);
         return new ProjectViewHolder(view);
@@ -104,17 +103,14 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
                     break;
             }
 
-            // Ensure the menu icon is visible
             menuIcon.setImageResource(R.drawable.ic_menu_dots);
 
-            // Click listener for the card body
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onProjectClick(project);
                 }
             });
 
-            // NEW: Click listener specifically for the 3-dots menu icon
             menuIcon.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onMenuClick(v, project);

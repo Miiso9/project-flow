@@ -37,13 +37,11 @@ public class ProjectListActivity extends AppCompatActivity {
     private ProjectViewModel viewModel;
     private ProjectAdapter adapter;
 
-    // UI References
     private ProgressBar progressBar;
     private LinearLayout emptyState;
     private TextView headerSubtitle;
     private TextView filterAll, filterActive, filterCompleted, filterOnHold;
 
-    // Views to toggle visibility when fragment opens
     private View mainContentLayout;
     private FloatingActionButton fabCreate;
     private FrameLayout fragmentContainer;
@@ -53,7 +51,6 @@ public class ProjectListActivity extends AppCompatActivity {
     private List<Project> allProjects = new ArrayList<>();
     private String currentFilter = "all";
 
-    // Default to member until we confirm otherwise
     private String myRole = "member";
     private String currentUserId;
 
@@ -65,12 +62,10 @@ public class ProjectListActivity extends AppCompatActivity {
         teamId = getIntent().getStringExtra("team_id");
         teamName = getIntent().getStringExtra("team_name");
 
-        // Get User ID for role checking
         currentUserId = new TokenManager(this).getUserId();
 
         viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
 
-        // 1. Initialize views
         mainContentLayout = findViewById(R.id.mainContentLayout);
         fabCreate = findViewById(R.id.fabCreateProject);
         fragmentContainer = findViewById(R.id.fragmentContainer);
@@ -80,23 +75,18 @@ public class ProjectListActivity extends AppCompatActivity {
         setupFilters();
         observeViewModel();
 
-        // 2. Fetch role immediately so the menu knows if it should show "Delete"
         fetchUserRole();
 
-        // 3. Add BackStack Listener to handle UI toggling
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-                // Fragment is OPEN: Hide Activity UI, Show Fragment Container
                 mainContentLayout.setVisibility(View.GONE);
                 fabCreate.hide();
                 fragmentContainer.setVisibility(View.VISIBLE);
             } else {
-                // Fragment is CLOSED: Show Activity UI, Hide Fragment Container
                 mainContentLayout.setVisibility(View.VISIBLE);
                 fabCreate.show();
                 fragmentContainer.setVisibility(View.GONE);
 
-                // Refresh title
                 if (getSupportActionBar() != null) {
                     getSupportActionBar().setTitle(teamName != null ? teamName + " - Projects" : "Projects");
                 }
@@ -109,21 +99,16 @@ public class ProjectListActivity extends AppCompatActivity {
 
         SupabaseApi api = RetrofitClient.getClient(this).create(SupabaseApi.class);
 
-        // CORRECTED CALL: We only pass the teamId filter and the select string
-        // We fetch all members and filter in Java because the API method signature doesn't support userId filtering
         api.getTeamMembers("eq." + teamId, "*").enqueue(new Callback<List<TeamMember>>() {
             @Override
             public void onResponse(Call<List<TeamMember>> call, Response<List<TeamMember>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<TeamMember> members = response.body();
 
-                    // Loop through members to find the current user
                     for (TeamMember member : members) {
-                        // Check if this member record belongs to the current user
-                        // Note: Ensure your TeamMember model has a field 'userId' or 'user_id'
                         if (member.userId != null && member.userId.equals(currentUserId)) {
                             myRole = member.role;
-                            break; // Found our role, stop looping
+                            break;
                         }
                     }
                 }
@@ -131,7 +116,6 @@ public class ProjectListActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<List<TeamMember>> call, Throwable t) {
-                // Keep default role "member"
             }
         });
     }
@@ -207,10 +191,8 @@ public class ProjectListActivity extends AppCompatActivity {
     private void showPopupMenu(View view, Project project) {
         android.widget.PopupMenu popup = new android.widget.PopupMenu(this, view);
 
-        // 1. Always add Edit
         popup.getMenu().add(0, 1, 0, "Edit");
 
-        // 2. Only add "Delete" if role is 'owner'
         if (myRole != null && myRole.equalsIgnoreCase("owner")) {
             popup.getMenu().add(0, 2, 1, "Delete");
         }

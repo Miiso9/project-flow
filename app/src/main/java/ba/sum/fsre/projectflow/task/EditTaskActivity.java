@@ -131,7 +131,6 @@ public class EditTaskActivity extends AppCompatActivity {
     }
 
     private void setupDropdowns() {
-        // CHANGED: Use Status Display Options
         ArrayAdapter<String> statusAdapter = new ArrayAdapter<>(
                 this,
                 android.R.layout.simple_dropdown_item_1line,
@@ -250,7 +249,6 @@ public class EditTaskActivity extends AppCompatActivity {
         titleInput.setText(task.title);
         descriptionInput.setText(task.description);
 
-        // CHANGED: Map Database Status back to Display Status
         if (task.status != null) {
             String displayStatus = "Todo"; // Default
             for (int i = 0; i < statusValueOptions.length; i++) {
@@ -286,7 +284,6 @@ public class EditTaskActivity extends AppCompatActivity {
         String estimatedHoursStr = estimatedHoursInput.getText().toString().trim();
         String priority = priorityInput.getText().toString().trim();
 
-        // CHANGED: Map Display Status to Database Value
         String selectedStatusDisplay = statusInput.getText().toString().trim();
         String status = "todo";
         for (int i = 0; i < statusDisplayOptions.length; i++) {

@@ -40,7 +40,6 @@ public class TaskFragment extends Fragment {
     private TextView emptyState;
     private TextView titleTextView;
 
-    // NEW: Filter Views
     private TextView filterAll, filterTodo, filterInProgress, filterDone, filterBlocked;
 
     private List<Task> allTasks = new ArrayList<>();
@@ -66,7 +65,7 @@ public class TaskFragment extends Fragment {
 
         initializeViews(view);
         setupRecyclerView();
-        setupFilters(view); // NEW
+        setupFilters(view);
         setupFAB(view);
         observeViewModel();
 
@@ -83,7 +82,6 @@ public class TaskFragment extends Fragment {
         emptyState = view.findViewById(R.id.emptyState);
         titleTextView = view.findViewById(R.id.title);
 
-        // NEW: Init Filters
         filterAll = view.findViewById(R.id.filterAll);
         filterTodo = view.findViewById(R.id.filterTodo);
         filterInProgress = view.findViewById(R.id.filterInProgress);
@@ -118,14 +116,11 @@ public class TaskFragment extends Fragment {
     private void applyFilter(String filter, TextView selectedView) {
         currentFilter = filter;
 
-        // Reset styles
         resetFilterStyles();
 
-        // Highlight selected
         selectedView.setBackgroundResource(R.drawable.bg_filter_selected);
         selectedView.setTextColor(requireContext().getColor(R.color.white));
 
-        // Filter List
         List<Task> filteredTasks = new ArrayList<>();
         for (Task task : allTasks) {
             String status = task.status != null ? task.status.toLowerCase() : "todo";
@@ -134,10 +129,8 @@ public class TaskFragment extends Fragment {
             }
         }
 
-        // Update Adapter
         taskAdapter.updateTasks(filteredTasks);
 
-        // Update Empty State logic
         if (filteredTasks.isEmpty()) {
             emptyState.setVisibility(View.VISIBLE);
             tasksRecyclerView.setVisibility(View.GONE);
@@ -219,8 +212,7 @@ public class TaskFragment extends Fragment {
     private void observeViewModel() {
         viewModel.getTasks().observe(getViewLifecycleOwner(), tasks -> {
             allTasks = tasks != null ? tasks : new ArrayList<>();
-            // Apply current filter again to refresh view
-            TextView currentView = filterAll; // default
+            TextView currentView = filterAll;
             switch(currentFilter) {
                 case "todo": currentView = filterTodo; break;
                 case "in_progress": currentView = filterInProgress; break;

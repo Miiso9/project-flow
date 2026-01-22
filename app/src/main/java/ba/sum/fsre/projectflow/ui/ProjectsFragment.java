@@ -46,7 +46,6 @@ public class ProjectsFragment extends Fragment {
 
     private List<Project> allProjects = new ArrayList<>();
 
-    // Map to store the current user's role for each team (Key: TeamID, Value: Role)
     private Map<String, String> userTeamRoles = new HashMap<>();
 
     private String currentFilter = "all";
@@ -98,16 +97,11 @@ public class ProjectsFragment extends Fragment {
         rvProjects.setAdapter(adapter);
     }
 
-    /**
-     * UPDATED: Conditionally shows "Delete" only if the user is an owner.
-     */
     private void showPopupMenu(View view, Project project) {
         PopupMenu popup = new PopupMenu(requireContext(), view);
 
-        // Always add Edit
         popup.getMenu().add(0, 1, 0, "Edit");
 
-        // Check Role: Only add "Delete" if user is owner
         String myRole = userTeamRoles.get(project.teamId);
         if (myRole != null && myRole.equalsIgnoreCase("owner")) {
             popup.getMenu().add(0, 2, 1, "Delete");
@@ -131,7 +125,6 @@ public class ProjectsFragment extends Fragment {
     }
 
     private void confirmDeleteProject(Project project) {
-        // Double check just to be safe, though UI hides it
         String myRole = userTeamRoles.get(project.teamId);
         if (myRole == null || !myRole.equalsIgnoreCase("owner")) {
             return;
@@ -193,7 +186,6 @@ public class ProjectsFragment extends Fragment {
                     final int[] pendingRequests = {teams.size()};
 
                     for (TeamMember tm : teams) {
-                        // Store the role for UI logic later
                         if (tm.teams != null && tm.role != null) {
                             userTeamRoles.put(tm.teams.id, tm.role);
                         }
@@ -306,7 +298,6 @@ public class ProjectsFragment extends Fragment {
     }
 
     private void showProjectOptionsDialog(Project project) {
-        // Fallback method for long click - we should check role here too if used
         String myRole = userTeamRoles.get(project.teamId);
         boolean isOwner = myRole != null && myRole.equalsIgnoreCase("owner");
 
