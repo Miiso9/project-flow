@@ -9,7 +9,7 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.LinearLayout; // Correct import
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -65,7 +65,7 @@ public class HomeFragment extends Fragment {
 
         initializeViews(view);
         setupRecyclerView();
-        setupCalendar(view); // Visual only now
+        setupCalendar(view);
         setupFilters(view);
         observeViewModel();
         loadMyTasks();
