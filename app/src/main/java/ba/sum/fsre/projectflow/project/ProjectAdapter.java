@@ -4,7 +4,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -24,6 +23,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
     public interface OnProjectClickListener {
         void onProjectClick(Project project);
         void onProjectLongClick(Project project);
+        void onMenuClick(View view, Project project);
     }
 
     public ProjectAdapter(OnProjectClickListener listener) {
@@ -38,6 +38,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
     @NonNull
     @Override
     public ProjectViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Ensure this layout name matches your XML (e.g., item_project_card or item_task_project_card)
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_project_card, parent, false);
         return new ProjectViewHolder(view);
@@ -75,7 +76,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         public void bind(Project project, OnProjectClickListener listener) {
             projectName.setText(project.name);
             projectDescription.setText(project.description != null ? project.description : "");
-            
+
             startDate.setText(project.startDate != null ? project.startDate : "-");
             endDate.setText(project.endDate != null ? project.endDate : "-");
 
@@ -85,31 +86,38 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
                     statusLabel.setText("Completed");
                     statusLabel.setBackgroundResource(R.drawable.bg_status_completed);
                     statusLabel.setTextColor(itemView.getContext().getColor(R.color.status_completed_text));
-                    menuIcon.setImageResource(R.drawable.ic_checkmark);
                     break;
                 case "on_hold":
                     statusLabel.setText("On Hold");
                     statusLabel.setBackgroundResource(R.drawable.bg_status_on_hold);
                     statusLabel.setTextColor(itemView.getContext().getColor(R.color.status_on_hold_text));
-                    menuIcon.setImageResource(R.drawable.ic_menu_dots);
                     break;
                 case "cancelled":
                     statusLabel.setText("Cancelled");
                     statusLabel.setBackgroundResource(R.drawable.bg_status_cancelled);
                     statusLabel.setTextColor(itemView.getContext().getColor(R.color.status_cancelled_text));
-                    menuIcon.setImageResource(R.drawable.ic_menu_dots);
                     break;
                 default: // active
                     statusLabel.setText("Active");
                     statusLabel.setBackgroundResource(R.drawable.bg_status_active);
                     statusLabel.setTextColor(itemView.getContext().getColor(R.color.status_active_text));
-                    menuIcon.setImageResource(R.drawable.ic_menu_dots);
                     break;
             }
 
+            // Ensure the menu icon is visible
+            menuIcon.setImageResource(R.drawable.ic_menu_dots);
+
+            // Click listener for the card body
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onProjectClick(project);
+                }
+            });
+
+            // NEW: Click listener specifically for the 3-dots menu icon
+            menuIcon.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onMenuClick(v, project);
                 }
             });
 

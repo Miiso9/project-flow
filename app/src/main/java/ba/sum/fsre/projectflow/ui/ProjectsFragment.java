@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,13 +15,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ba.sum.fsre.projectflow.R;
 import ba.sum.fsre.projectflow.model.Project;
@@ -28,6 +29,7 @@ import ba.sum.fsre.projectflow.model.TeamMember;
 import ba.sum.fsre.projectflow.network.RetrofitClient;
 import ba.sum.fsre.projectflow.network.SupabaseApi;
 import ba.sum.fsre.projectflow.project.CreateProjectActivity;
+import ba.sum.fsre.projectflow.project.EditProjectActivity;
 import ba.sum.fsre.projectflow.project.ProjectAdapter;
 import ba.sum.fsre.projectflow.storage.TokenManager;
 import retrofit2.Call;
@@ -43,6 +45,10 @@ public class ProjectsFragment extends Fragment {
     private TextView filterAll, filterActive, filterCompleted, filterOnHold;
 
     private List<Project> allProjects = new ArrayList<>();
+
+    // Map to store the current user's role for each team (Key: TeamID, Value: Role)
+    private Map<String, String> userTeamRoles = new HashMap<>();
+
     private String currentFilter = "all";
 
     @Nullable
@@ -72,12 +78,9 @@ public class ProjectsFragment extends Fragment {
         adapter = new ProjectAdapter(new ProjectAdapter.OnProjectClickListener() {
             @Override
             public void onProjectClick(Project project) {
-                // Open TaskFragment for this project
                 TaskFragment taskFragment = TaskFragment.newInstance(project.id, project.name);
-
-                // Use parent fragment manager to navigate
                 requireActivity().getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragmentContainer, taskFragment)  // Use fragmentContainer from your layout
+                        .replace(R.id.fragmentContainer, taskFragment)
                         .addToBackStack("projects")
                         .commit();
             }
@@ -86,78 +89,91 @@ public class ProjectsFragment extends Fragment {
             public void onProjectLongClick(Project project) {
                 showProjectOptionsDialog(project);
             }
+
+            @Override
+            public void onMenuClick(View view, Project project) {
+                showPopupMenu(view, project);
+            }
         });
         rvProjects.setAdapter(adapter);
     }
 
-    private void setupFilters(View view) {
-        filterAll.setOnClickListener(v -> applyFilter("all", filterAll));
-        filterActive.setOnClickListener(v -> applyFilter("active", filterActive));
-        filterCompleted.setOnClickListener(v -> applyFilter("completed", filterCompleted));
-        filterOnHold.setOnClickListener(v -> applyFilter("on_hold", filterOnHold));
-    }
+    /**
+     * UPDATED: Conditionally shows "Delete" only if the user is an owner.
+     */
+    private void showPopupMenu(View view, Project project) {
+        PopupMenu popup = new PopupMenu(requireContext(), view);
 
-    private void applyFilter(String filter, TextView selectedView) {
-        currentFilter = filter;
+        // Always add Edit
+        popup.getMenu().add(0, 1, 0, "Edit");
 
-        resetFilterStyles();
-        selectedView.setBackgroundResource(R.drawable.bg_filter_selected);
-        selectedView.setTextColor(requireContext().getColor(R.color.white));
-
-        List<Project> filteredProjects = new ArrayList<>();
-        for (Project project : allProjects) {
-            String status = project.status != null ? project.status.toLowerCase() : "active";
-            if ("all".equals(filter) || filter.equals(status)) {
-                filteredProjects.add(project);
-            }
+        // Check Role: Only add "Delete" if user is owner
+        String myRole = userTeamRoles.get(project.teamId);
+        if (myRole != null && myRole.equalsIgnoreCase("owner")) {
+            popup.getMenu().add(0, 2, 1, "Delete");
         }
 
-        adapter.setProjects(filteredProjects);
-        updateHeader(filteredProjects.size());
-        updateEmptyState(filteredProjects.isEmpty());
+        popup.setOnMenuItemClickListener(item -> {
+            String title = item.getTitle().toString();
+            if (title.equals("Edit")) {
+                Intent intent = new Intent(getActivity(), EditProjectActivity.class);
+                intent.putExtra("project_data", project);
+                startActivity(intent);
+                return true;
+            } else if (title.equals("Delete")) {
+                confirmDeleteProject(project);
+                return true;
+            }
+            return false;
+        });
+
+        popup.show();
     }
 
-    private void resetFilterStyles() {
-        filterAll.setBackgroundResource(R.drawable.bg_filter_unselected);
-        filterAll.setTextColor(requireContext().getColor(R.color.text_primary));
-        filterActive.setBackgroundResource(R.drawable.bg_filter_unselected);
-        filterActive.setTextColor(requireContext().getColor(R.color.text_primary));
-        filterCompleted.setBackgroundResource(R.drawable.bg_filter_unselected);
-        filterCompleted.setTextColor(requireContext().getColor(R.color.text_primary));
-        filterOnHold.setBackgroundResource(R.drawable.bg_filter_unselected);
-        filterOnHold.setTextColor(requireContext().getColor(R.color.text_primary));
-    }
-
-    private void updateHeader(int count) {
-        headerSubtitle.setText(count + " Project" + (count != 1 ? "s" : ""));
-    }
-
-    private void updateEmptyState(boolean isEmpty) {
-        emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-    }
-
-    private void showProjectOptionsDialog(Project project) {
-        String[] options = {"Edit", "Delete"};
+    private void confirmDeleteProject(Project project) {
+        // Double check just to be safe, though UI hides it
+        String myRole = userTeamRoles.get(project.teamId);
+        if (myRole == null || !myRole.equalsIgnoreCase("owner")) {
+            return;
+        }
 
         new AlertDialog.Builder(requireContext())
-                .setTitle(project.name)
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        Intent intent = new Intent(getActivity(), CreateProjectActivity.class);
-                        intent.putExtra("team_id", project.teamId);
-                        intent.putExtra("project", project);
-                        intent.putExtra("is_edit", true);
-                        startActivity(intent);
-                    } else {
-                        Toast.makeText(getContext(), "Delete from team projects", Toast.LENGTH_SHORT).show();
-                    }
-                })
+                .setTitle("Delete Project")
+                .setMessage("Are you sure you want to delete '" + project.name + "'? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> deleteProject(project))
+                .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void deleteProject(Project project) {
+        progressBar.setVisibility(View.VISIBLE);
+        SupabaseApi api = RetrofitClient.getClient(requireContext()).create(SupabaseApi.class);
+
+        api.deleteProject("eq." + project.id).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                progressBar.setVisibility(View.GONE);
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Project deleted", Toast.LENGTH_SHORT).show();
+                    allProjects.remove(project);
+                    applyFilter(currentFilter, getCurrentFilterView());
+                } else {
+                    Toast.makeText(getContext(), "Failed to delete project", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(getContext(), "Network error", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void loadAllProjects() {
         progressBar.setVisibility(View.VISIBLE);
         allProjects.clear();
+        userTeamRoles.clear();
 
         String userId = new TokenManager(requireContext()).getUserId();
         SupabaseApi api = RetrofitClient.getClient(requireContext()).create(SupabaseApi.class);
@@ -167,6 +183,7 @@ public class ProjectsFragment extends Fragment {
             public void onResponse(Call<List<TeamMember>> call, Response<List<TeamMember>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<TeamMember> teams = response.body();
+
                     if (teams.isEmpty()) {
                         progressBar.setVisibility(View.GONE);
                         applyFilter(currentFilter, filterAll);
@@ -174,7 +191,13 @@ public class ProjectsFragment extends Fragment {
                     }
 
                     final int[] pendingRequests = {teams.size()};
+
                     for (TeamMember tm : teams) {
+                        // Store the role for UI logic later
+                        if (tm.teams != null && tm.role != null) {
+                            userTeamRoles.put(tm.teams.id, tm.role);
+                        }
+
                         if (tm.teams != null) {
                             loadProjectsForTeam(tm.teams.id, pendingRequests);
                         } else {
@@ -225,6 +248,87 @@ public class ProjectsFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private TextView getCurrentFilterView() {
+        switch (currentFilter) {
+            case "active": return filterActive;
+            case "completed": return filterCompleted;
+            case "on_hold": return filterOnHold;
+            default: return filterAll;
+        }
+    }
+
+    private void setupFilters(View view) {
+        filterAll.setOnClickListener(v -> applyFilter("all", filterAll));
+        filterActive.setOnClickListener(v -> applyFilter("active", filterActive));
+        filterCompleted.setOnClickListener(v -> applyFilter("completed", filterCompleted));
+        filterOnHold.setOnClickListener(v -> applyFilter("on_hold", filterOnHold));
+    }
+
+    private void applyFilter(String filter, TextView selectedView) {
+        currentFilter = filter;
+        resetFilterStyles();
+
+        selectedView.setBackgroundResource(R.drawable.bg_filter_selected);
+        selectedView.setTextColor(requireContext().getColor(R.color.white));
+
+        List<Project> filteredProjects = new ArrayList<>();
+        for (Project project : allProjects) {
+            String status = project.status != null ? project.status.toLowerCase() : "active";
+            if ("all".equals(filter) || filter.equals(status)) {
+                filteredProjects.add(project);
+            }
+        }
+
+        adapter.setProjects(filteredProjects);
+        updateHeader(filteredProjects.size());
+        updateEmptyState(filteredProjects.isEmpty());
+    }
+
+    private void resetFilterStyles() {
+        filterAll.setBackgroundResource(R.drawable.bg_filter_unselected);
+        filterAll.setTextColor(requireContext().getColor(R.color.text_primary));
+        filterActive.setBackgroundResource(R.drawable.bg_filter_unselected);
+        filterActive.setTextColor(requireContext().getColor(R.color.text_primary));
+        filterCompleted.setBackgroundResource(R.drawable.bg_filter_unselected);
+        filterCompleted.setTextColor(requireContext().getColor(R.color.text_primary));
+        filterOnHold.setBackgroundResource(R.drawable.bg_filter_unselected);
+        filterOnHold.setTextColor(requireContext().getColor(R.color.text_primary));
+    }
+
+    private void updateHeader(int count) {
+        headerSubtitle.setText(count + " Project" + (count != 1 ? "s" : ""));
+    }
+
+    private void updateEmptyState(boolean isEmpty) {
+        emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+    }
+
+    private void showProjectOptionsDialog(Project project) {
+        // Fallback method for long click - we should check role here too if used
+        String myRole = userTeamRoles.get(project.teamId);
+        boolean isOwner = myRole != null && myRole.equalsIgnoreCase("owner");
+
+        List<String> optionsList = new ArrayList<>();
+        optionsList.add("Edit");
+        if (isOwner) optionsList.add("Delete");
+
+        String[] options = optionsList.toArray(new String[0]);
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle(project.name)
+                .setItems(options, (dialog, which) -> {
+                    String selected = options[which];
+                    if (selected.equals("Edit")) {
+                        Intent intent = new Intent(getActivity(), EditProjectActivity.class);
+                        intent.putExtra("project_data", project);
+                        startActivity(intent);
+                    } else if (selected.equals("Delete")) {
+                        confirmDeleteProject(project);
+                    }
+                })
+                .show();
     }
 
     @Override

@@ -58,6 +58,10 @@
             android:name=".task.EditTaskActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".project.EditProjectActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>
