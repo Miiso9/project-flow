@@ -109,14 +109,14 @@ public class CreateProjectActivity extends AppCompatActivity {
 
     private void showDatePicker(boolean isStartDate) {
         Calendar calendar = isStartDate ? startCalendar : endCalendar;
-        
+
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 this,
                 (view, year, month, dayOfMonth) -> {
                     calendar.set(Calendar.YEAR, year);
                     calendar.set(Calendar.MONTH, month);
                     calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                    
+
                     String formattedDate = dateFormat.format(calendar.getTime());
                     if (isStartDate) {
                         etStartDate.setText(formattedDate);
@@ -128,7 +128,7 @@ public class CreateProjectActivity extends AppCompatActivity {
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
         );
-        
+
         datePickerDialog.show();
     }
 
@@ -152,15 +152,19 @@ public class CreateProjectActivity extends AppCompatActivity {
     private void submitForm() {
         String name = etName.getText() != null ? etName.getText().toString().trim() : "";
         String description = etDescription.getText() != null ? etDescription.getText().toString().trim() : "";
-        String startDate = etStartDate.getText() != null ? etStartDate.getText().toString().trim() : "";
-        String endDate = etEndDate.getText() != null ? etEndDate.getText().toString().trim() : "";
-        String status = statusValues[spinnerStatus.getSelectedItemPosition()];
+        String startDateRaw = etStartDate.getText() != null ? etStartDate.getText().toString().trim() : "";
+        String endDateRaw = etEndDate.getText() != null ? etEndDate.getText().toString().trim() : "";
 
         if (name.isEmpty()) {
             etName.setError("Project name is required");
             etName.requestFocus();
             return;
         }
+
+        String startDate = startDateRaw.isEmpty() ? null : startDateRaw;
+        String endDate = endDateRaw.isEmpty() ? null : endDateRaw;
+
+        String status = statusValues[spinnerStatus.getSelectedItemPosition()];
 
         if (isEditMode && existingProject != null) {
             viewModel.updateProject(this, existingProject.id, name, description, startDate, endDate, status);

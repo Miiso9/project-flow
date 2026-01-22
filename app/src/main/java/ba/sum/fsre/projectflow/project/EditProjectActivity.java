@@ -3,13 +3,13 @@ package ba.sum.fsre.projectflow.project;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.View; // Added import
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -37,7 +37,8 @@ public class EditProjectActivity extends AppCompatActivity {
     private ProjectViewModel viewModel;
     private Project projectToEdit;
 
-    private final String[] statusOptions = {"Active", "Completed", "On_Hold", "Cancelled"};
+    private final String[] statusOptions = {"Active", "Completed", "On Hold", "Cancelled"};
+    private final String[] statusValues = {"active", "completed", "on_hold", "cancelled"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,12 +112,14 @@ public class EditProjectActivity extends AppCompatActivity {
         viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
 
         viewModel.getLoading().observe(this, isLoading -> {
-            progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-            btnSubmit.setEnabled(!isLoading);
+            if (isLoading != null) {
+                progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+                btnSubmit.setEnabled(!isLoading);
+            }
         });
 
         viewModel.getOperationSuccess().observe(this, success -> {
-            if (success) {
+            if (success != null && success) {
                 Toast.makeText(this, "Project updated successfully", Toast.LENGTH_SHORT).show();
                 finish();
             }
@@ -130,16 +133,22 @@ public class EditProjectActivity extends AppCompatActivity {
     }
 
     private void performUpdate() {
-        String name = etName.getText().toString().trim();
-        String description = etDescription.getText().toString().trim();
-        String startDate = etStartDate.getText().toString().trim();
-        String endDate = etEndDate.getText().toString().trim();
-        String status = spinnerStatus.getSelectedItem().toString();
+        String name = etName.getText() != null ? etName.getText().toString().trim() : "";
+        String description = etDescription.getText() != null ? etDescription.getText().toString().trim() : "";
+        String startDateRaw = etStartDate.getText() != null ? etStartDate.getText().toString().trim() : "";
+        String endDateRaw = etEndDate.getText() != null ? etEndDate.getText().toString().trim() : "";
+
+        int statusIndex = spinnerStatus.getSelectedItemPosition();
+        String status = statusValues[statusIndex];
 
         if (name.isEmpty()) {
             etName.setError("Name is required");
+            etName.requestFocus();
             return;
         }
+
+        String startDate = startDateRaw.isEmpty() ? null : startDateRaw;
+        String endDate = endDateRaw.isEmpty() ? null : endDateRaw;
 
         viewModel.updateProject(
                 this,
@@ -176,8 +185,8 @@ public class EditProjectActivity extends AppCompatActivity {
     }
 
     private int getStatusIndex(String status) {
-        for (int i = 0; i < statusOptions.length; i++) {
-            if (statusOptions[i].equalsIgnoreCase(status)) {
+        for (int i = 0; i < statusValues.length; i++) {
+            if (statusValues[i].equalsIgnoreCase(status)) {
                 return i;
             }
         }
