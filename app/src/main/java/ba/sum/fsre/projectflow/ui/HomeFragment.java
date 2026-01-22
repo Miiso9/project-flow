@@ -9,6 +9,7 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.LinearLayout; // Correct import
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,11 +20,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
-import android.widget.LinearLayout;
-
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -44,8 +42,15 @@ public class HomeFragment extends Fragment {
     private LinearLayout emptyState;
     private List<Task> allTasks = new ArrayList<>();
     private TextView headerSubtitle;
+
+    // Calendar Views
     private TextView[] dateViews = new TextView[7];
     private Calendar currentWeek = Calendar.getInstance();
+
+    // Filter Views
+    private TextView filterAll, filterTodo, filterInProgress, filterDone, filterBlocked;
+    private String currentFilter = "all";
+
     private String currentUserId;
 
     @Nullable
@@ -55,13 +60,13 @@ public class HomeFragment extends Fragment {
 
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
 
-        // Get current user ID from TokenManager
         TokenManager tokenManager = new TokenManager(requireContext());
         currentUserId = tokenManager.getUserId();
 
         initializeViews(view);
         setupRecyclerView();
-        setupCalendar(view);
+        setupCalendar(view); // Visual only now
+        setupFilters(view);
         observeViewModel();
         loadMyTasks();
 
@@ -74,7 +79,6 @@ public class HomeFragment extends Fragment {
         progressBar = view.findViewById(R.id.progressBar);
         emptyState = view.findViewById(R.id.emptyState);
 
-        // Initialize date views
         dateViews[0] = view.findViewById(R.id.date7);
         dateViews[1] = view.findViewById(R.id.date8);
         dateViews[2] = view.findViewById(R.id.date9);
@@ -82,6 +86,59 @@ public class HomeFragment extends Fragment {
         dateViews[4] = view.findViewById(R.id.date11);
         dateViews[5] = view.findViewById(R.id.date12);
         dateViews[6] = view.findViewById(R.id.date13);
+
+        filterAll = view.findViewById(R.id.filterAll);
+        filterTodo = view.findViewById(R.id.filterTodo);
+        filterInProgress = view.findViewById(R.id.filterInProgress);
+        filterDone = view.findViewById(R.id.filterDone);
+        filterBlocked = view.findViewById(R.id.filterBlocked);
+    }
+
+    private void setupFilters(View view) {
+        filterAll.setOnClickListener(v -> applyFilter("all", filterAll));
+        filterTodo.setOnClickListener(v -> applyFilter("todo", filterTodo));
+        filterInProgress.setOnClickListener(v -> applyFilter("in_progress", filterInProgress));
+        filterDone.setOnClickListener(v -> applyFilter("done", filterDone));
+        filterBlocked.setOnClickListener(v -> applyFilter("blocked", filterBlocked));
+    }
+
+    private void applyFilter(String filter, TextView selectedView) {
+        currentFilter = filter;
+
+        resetFilterStyles();
+
+        selectedView.setBackgroundResource(R.drawable.bg_filter_selected);
+        selectedView.setTextColor(requireContext().getColor(R.color.white));
+
+        List<Task> filteredTasks = new ArrayList<>();
+        for (Task task : allTasks) {
+            String status = task.status != null ? task.status.toLowerCase() : "todo";
+            if ("all".equals(filter) || filter.equals(status)) {
+                filteredTasks.add(task);
+            }
+        }
+
+        taskAdapter.updateTasks(filteredTasks);
+
+        updateHeader(filteredTasks.size());
+
+        if (filteredTasks.isEmpty()) {
+            emptyState.setVisibility(View.VISIBLE);
+            tasksRecyclerView.setVisibility(View.GONE);
+            TextView emptyText = emptyState.findViewById(R.id.emptyStateText); // Assuming you add an ID to the textview in xml
+            if(emptyText != null) emptyText.setText(allTasks.isEmpty() ? "No tasks assigned to you" : "No tasks match this filter");
+        } else {
+            emptyState.setVisibility(View.GONE);
+            tasksRecyclerView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void resetFilterStyles() {
+        TextView[] filters = {filterAll, filterTodo, filterInProgress, filterDone, filterBlocked};
+        for (TextView view : filters) {
+            view.setBackgroundResource(R.drawable.bg_filter_unselected);
+            view.setTextColor(requireContext().getColor(R.color.text_primary));
+        }
     }
 
     private void setupRecyclerView() {
@@ -109,7 +166,6 @@ public class HomeFragment extends Fragment {
 
     private void showPopupMenu(View view, Task task) {
         PopupMenu popup = new PopupMenu(requireContext(), view);
-
         popup.getMenu().add(0, 1, 0, "Edit");
         popup.getMenu().add(0, 2, 1, "Delete");
 
@@ -126,32 +182,20 @@ public class HomeFragment extends Fragment {
             }
             return false;
         });
-
         popup.show();
     }
 
     private void showTaskOptionsDialog(Task task) {
         String[] options = {"Mark as Todo", "Mark as In Progress", "Mark as Done", "Mark as Blocked", "Delete"};
-
         new AlertDialog.Builder(requireContext())
                 .setTitle(task.title)
                 .setItems(options, (dialog, which) -> {
                     switch (which) {
-                        case 0:
-                            viewModel.updateTaskStatus(task.id, "todo");
-                            break;
-                        case 1:
-                            viewModel.updateTaskStatus(task.id, "in_progress");
-                            break;
-                        case 2:
-                            viewModel.updateTaskStatus(task.id, "done");
-                            break;
-                        case 3:
-                            viewModel.updateTaskStatus(task.id, "blocked");
-                            break;
-                        case 4:
-                            confirmDeleteTask(task);
-                            break;
+                        case 0: viewModel.updateTaskStatus(task.id, "todo"); break;
+                        case 1: viewModel.updateTaskStatus(task.id, "in_progress"); break;
+                        case 2: viewModel.updateTaskStatus(task.id, "done"); break;
+                        case 3: viewModel.updateTaskStatus(task.id, "blocked"); break;
+                        case 4: confirmDeleteTask(task); break;
                     }
                 })
                 .show();
@@ -161,29 +205,23 @@ public class HomeFragment extends Fragment {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Delete Task")
                 .setMessage("Are you sure you want to delete \"" + task.title + "\"?")
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    viewModel.deleteTask(task.id);
-                })
+                .setPositiveButton("Delete", (dialog, which) -> viewModel.deleteTask(task.id))
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
     private void setupCalendar(View view) {
         updateCalendarDisplay();
-
         for (int i = 0; i < dateViews.length; i++) {
             final int index = i;
             dateViews[i].setOnClickListener(v -> {
                 selectDate(index);
-                loadTasksForSelectedDate();
             });
         }
-
-        // Select today by default
         Calendar today = Calendar.getInstance();
         for (int i = 0; i < dateViews.length; i++) {
             Calendar day = (Calendar) currentWeek.clone();
-            day.add(Calendar.DATE, i - 3); // Center today
+            day.add(Calendar.DATE, i - 3);
             if (isSameDay(day, today)) {
                 selectDate(i);
                 break;
@@ -194,23 +232,20 @@ public class HomeFragment extends Fragment {
     private void updateCalendarDisplay() {
         SimpleDateFormat dayFormat = new SimpleDateFormat("d", Locale.getDefault());
         SimpleDateFormat dayNameFormat = new SimpleDateFormat("EEE", Locale.getDefault());
-
         Calendar today = Calendar.getInstance();
 
         for (int i = 0; i < dateViews.length; i++) {
             Calendar day = (Calendar) currentWeek.clone();
-            day.add(Calendar.DATE, i - 3); // Center the week
+            day.add(Calendar.DATE, i - 3);
 
             String dayNumber = dayFormat.format(day.getTime());
             String dayName = dayNameFormat.format(day.getTime());
             dateViews[i].setText(dayNumber + "\n" + dayName);
 
-            // Reset styles
             dateViews[i].setBackground(null);
             dateViews[i].setTextColor(getResources().getColor(R.color.text_secondary));
             dateViews[i].setTypeface(null, android.graphics.Typeface.NORMAL);
 
-            // Highlight today
             if (isSameDay(day, today)) {
                 dateViews[i].setTextColor(getResources().getColor(R.color.colorPrimary));
                 dateViews[i].setTypeface(null, android.graphics.Typeface.BOLD);
@@ -224,7 +259,6 @@ public class HomeFragment extends Fragment {
             dateView.setTextColor(getResources().getColor(R.color.text_secondary));
             dateView.setTypeface(null, android.graphics.Typeface.NORMAL);
         }
-
         dateViews[index].setBackgroundResource(R.drawable.bg_calendar_selected);
         dateViews[index].setTextColor(getResources().getColor(R.color.colorPrimary));
         dateViews[index].setTypeface(null, android.graphics.Typeface.BOLD);
@@ -244,45 +278,17 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    private void loadTasksForSelectedDate() {
-        // Find selected date
-        int selectedIndex = -1;
-        for (int i = 0; i < dateViews.length; i++) {
-            if (dateViews[i].getBackground() != null) {
-                selectedIndex = i;
-                break;
-            }
-        }
-
-        if (selectedIndex == -1) return;
-
-        Calendar selectedDate = (Calendar) currentWeek.clone();
-        selectedDate.add(Calendar.DATE, selectedIndex - 3);
-
-        // Filter tasks for the selected date
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String selectedDateStr = dateFormat.format(selectedDate.getTime());
-
-        List<Task> filteredTasks = new ArrayList<>();
-        for (Task task : allTasks) {
-            if (task.dueDate != null && task.dueDate.equals(selectedDateStr)) {
-                filteredTasks.add(task);
-            }
-        }
-
-        taskAdapter.updateTasks(filteredTasks);
-        updateHeader(filteredTasks.size(), selectedDate);
-
-        if (emptyState != null) {
-            emptyState.setVisibility(filteredTasks.isEmpty() ? View.VISIBLE : View.GONE);
-            tasksRecyclerView.setVisibility(filteredTasks.isEmpty() ? View.GONE : View.VISIBLE);
-        }
-    }
-
     private void observeViewModel() {
         viewModel.getTasks().observe(getViewLifecycleOwner(), tasks -> {
             allTasks = tasks != null ? tasks : new ArrayList<>();
-            loadTasksForSelectedDate();
+            TextView currentView = filterAll;
+            switch(currentFilter) {
+                case "todo": currentView = filterTodo; break;
+                case "in_progress": currentView = filterInProgress; break;
+                case "done": currentView = filterDone; break;
+                case "blocked": currentView = filterBlocked; break;
+            }
+            applyFilter(currentFilter, currentView);
         });
 
         viewModel.getLoading().observe(getViewLifecycleOwner(), isLoading -> {
@@ -300,15 +306,14 @@ public class HomeFragment extends Fragment {
         viewModel.getOperationSuccess().observe(getViewLifecycleOwner(), success -> {
             if (success != null && success) {
                 Toast.makeText(getContext(), "Task updated", Toast.LENGTH_SHORT).show();
-                loadMyTasks(); // Refresh tasks
+                loadMyTasks();
             }
         });
     }
 
-    private void updateHeader(int taskCount, Calendar date) {
+    private void updateHeader(int taskCount) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
-        String dateStr = dateFormat.format(date.getTime());
-
+        String dateStr = dateFormat.format(Calendar.getInstance().getTime());
         headerSubtitle.setText(dateStr + " (" + taskCount + " Task" + (taskCount != 1 ? "s" : "") + ")");
     }
 
