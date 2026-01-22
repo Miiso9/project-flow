@@ -2,6 +2,7 @@ package ba.sum.fsre.projectflow.task;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle; // Removed SharedPreferences import
 import android.view.MenuItem;
 import android.view.View;
@@ -13,6 +14,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -22,7 +25,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import ba.sum.fsre.projectflow.R;
 import ba.sum.fsre.projectflow.comment.CommentAdapter;
+import ba.sum.fsre.projectflow.document.DocumentAdapter;
 import ba.sum.fsre.projectflow.model.Comment;
+import ba.sum.fsre.projectflow.model.Document;
 import ba.sum.fsre.projectflow.model.Project;
 import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.network.RetrofitClient;
@@ -52,6 +57,10 @@ public class TaskDetailActivity extends AppCompatActivity {
     private CommentAdapter commentAdapter;
     private String currentUserId;
     private TokenManager tokenManager;
+    private RecyclerView recyclerDocuments;
+    private View btnUploadDocument;
+    private DocumentAdapter documentAdapter;
+    private ActivityResultLauncher<String> filePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,12 +77,22 @@ public class TaskDetailActivity extends AppCompatActivity {
         tokenManager = new TokenManager(this);
         currentUserId = tokenManager.getUserId();
 
+        filePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        uploadFile(uri);
+                    }
+                }
+        );
+
         initViews();
         setupToolbar();
         setupViewModel();
         fetchProjectName();
         setupButtons();
         setupComments();
+        setupDocuments();
     }
 
     private void initViews() {
@@ -95,6 +114,8 @@ public class TaskDetailActivity extends AppCompatActivity {
         btnSendComment = findViewById(R.id.btnSendComment);
 
         progressBar.setVisibility(View.GONE);
+        recyclerDocuments = findViewById(R.id.recyclerDocuments);
+        btnUploadDocument = findViewById(R.id.btnUploadDocument);
     }
 
     private void setupToolbar() {
@@ -140,6 +161,12 @@ public class TaskDetailActivity extends AppCompatActivity {
         viewModel.getComments().observe(this, comments -> {
             if (comments != null) {
                 commentAdapter.setComments(comments);
+            }
+        });
+
+        viewModel.getDocuments().observe(this, docs -> {
+            if (docs != null) {
+                documentAdapter.setDocuments(docs);
             }
         });
     }
@@ -321,8 +348,50 @@ public class TaskDetailActivity extends AppCompatActivity {
         if (task != null && task.id != null) {
             viewModel.loadTaskById(task.id);
             viewModel.loadComments(task.id);
+            viewModel.loadDocuments(task.id);
         }
     }
+
+    private void setupDocuments() {
+        documentAdapter = new DocumentAdapter(new DocumentAdapter.OnDocumentClickListener() {
+            @Override
+            public void onDownloadClick(Document document) {
+                if (document.fileUrl != null) {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse(document.fileUrl));
+                    startActivity(intent);
+                }
+            }
+
+            @Override
+            public void onDeleteClick(Document document) {
+                new AlertDialog.Builder(TaskDetailActivity.this)
+                        .setTitle("Delete Document")
+                        .setMessage("Are you sure you want to delete " + document.fileName + "?")
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            viewModel.deleteDocument(document);
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+        });
+
+        recyclerDocuments.setLayoutManager(new LinearLayoutManager(this));
+        recyclerDocuments.setAdapter(documentAdapter);
+        recyclerDocuments.setNestedScrollingEnabled(false);
+
+        btnUploadDocument.setOnClickListener(v -> {
+            filePickerLauncher.launch("*/*");
+        });
+    }
+
+    private void uploadFile(Uri uri) {
+        if (task != null && currentUserId != null) {
+            Toast.makeText(this, "Uploading...", Toast.LENGTH_SHORT).show();
+            viewModel.uploadDocument(uri, task.id, task.projectId, currentUserId);
+        }
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {

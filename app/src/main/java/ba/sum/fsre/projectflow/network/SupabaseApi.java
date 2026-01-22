@@ -4,6 +4,7 @@ import java.util.List;
 
 import ba.sum.fsre.projectflow.model.AuthResponse;
 import ba.sum.fsre.projectflow.model.Comment;
+import ba.sum.fsre.projectflow.model.Document;
 import ba.sum.fsre.projectflow.model.LoginRequest;
 import ba.sum.fsre.projectflow.model.Project;
 import ba.sum.fsre.projectflow.model.RefreshTokenRequest;
@@ -14,6 +15,7 @@ import ba.sum.fsre.projectflow.model.TeamInvitation;
 import ba.sum.fsre.projectflow.model.TeamMember;
 import ba.sum.fsre.projectflow.model.TeamMemberWithDetails;
 import ba.sum.fsre.projectflow.model.User;
+import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
@@ -158,5 +160,28 @@ public interface SupabaseApi {
 
     @DELETE("rest/v1/comments")
     Call<Void> deleteComment(@Query("id") String idFilter);
+
+    @retrofit2.http.Multipart
+    @POST("storage/v1/object/task_documents/{path}")
+    Call<Void> uploadFile(
+            @retrofit2.http.Path("path") String path,
+            @retrofit2.http.Part MultipartBody.Part file
+    );
+
+    @GET("rest/v1/documents")
+    Call<List<Document>> getDocumentsForTask(
+            @Query("task_id") String taskId,
+            @Query("select") String select,
+            @Query("order") String order
+    );
+
+    @POST("rest/v1/documents")
+    Call<List<Document>> createDocument(@Body Document document);
+
+    @DELETE("rest/v1/documents")
+    Call<Void> deleteDocument(@Query("id") String id);
+
+    @DELETE("storage/v1/object/task_documents/{path}")
+    Call<Void> deleteFileFromStorage(@retrofit2.http.Path("path") String path);
 
 }

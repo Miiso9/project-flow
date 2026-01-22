@@ -1,7 +1,6 @@
 package ba.sum.fsre.projectflow.network;
 
 import android.content.Context;
-
 import ba.sum.fsre.projectflow.storage.TokenManager;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -26,7 +25,6 @@ public class RetrofitClient {
                     .addInterceptor(chain -> chain.proceed(
                             chain.request().newBuilder()
                                     .addHeader("apikey", Constants.ANON_KEY)
-                                    .addHeader("Content-Type", "application/json")
                                     .addHeader("Prefer", "return=representation")
                                     .build()
                     ))
@@ -47,4 +45,3 @@ public class RetrofitClient {
         return retrofit;
     }
 }
-

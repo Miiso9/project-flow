@@ -1,15 +1,19 @@
 package ba.sum.fsre.projectflow.viewmodel;
 
 import android.app.Application;
+import android.net.Uri;
+
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import ba.sum.fsre.projectflow.model.Comment;
+import ba.sum.fsre.projectflow.model.Document;
 import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.network.RetrofitClient;
 import ba.sum.fsre.projectflow.network.SupabaseApi;
 import ba.sum.fsre.projectflow.repository.CommentRepository;
+import ba.sum.fsre.projectflow.repository.DocumentRepository;
 import ba.sum.fsre.projectflow.repository.TaskRepository;
 import ba.sum.fsre.projectflow.storage.TokenManager;
 
@@ -30,8 +34,9 @@ public class TaskViewModel extends AndroidViewModel {
     private MutableLiveData<String> error = new MutableLiveData<>();
     private MutableLiveData<Boolean> navigateBack = new MutableLiveData<>();
     private MutableLiveData<Boolean> operationSuccess = new MutableLiveData<>();
-
     private MutableLiveData<List<Comment>> commentsList = new MutableLiveData<>();
+    private DocumentRepository documentRepository;
+    private MutableLiveData<List<Document>> documentsList = new MutableLiveData<>();
 
     public TaskViewModel(Application application) {
         super(application);
@@ -39,6 +44,7 @@ public class TaskViewModel extends AndroidViewModel {
         api = RetrofitClient.getClient(application).create(SupabaseApi.class);
         repository = new TaskRepository(api);
         commentRepository = new CommentRepository(api);
+        documentRepository = new DocumentRepository(api, application);
     }
 
     public LiveData<List<Task>> getTasks() { return tasks; }
@@ -48,6 +54,7 @@ public class TaskViewModel extends AndroidViewModel {
     public LiveData<Boolean> getNavigateBack() { return navigateBack; }
     public LiveData<Boolean> getOperationSuccess() { return operationSuccess; }
     public LiveData<List<Comment>> getComments() { return commentsList; }
+    public LiveData<List<Document>> getDocuments() { return documentsList; }
 
     public void loadTasks(String projectId) {
         loading.setValue(true);
@@ -250,6 +257,55 @@ public class TaskViewModel extends AndroidViewModel {
             public void onFailure(Call<Void> call, Throwable t) {
                 loading.setValue(false);
                 error.setValue("Network error: " + t.getMessage());
+            }
+        });
+    }
+
+    public void loadDocuments(String taskId) {
+        documentRepository.getDocuments(taskId, new DocumentRepository.DocumentCallback<List<Document>>() {
+            @Override
+            public void onSuccess(List<Document> data) {
+                documentsList.setValue(data);
+            }
+            @Override
+            public void onError(String errorMsg) {
+                error.setValue(errorMsg);
+            }
+        });
+    }
+
+    public void uploadDocument(Uri fileUri, String taskId, String projectId, String userId) {
+        loading.setValue(true);
+        documentRepository.uploadDocument(fileUri, taskId, projectId, userId, new DocumentRepository.DocumentCallback<Document>() {
+            @Override
+            public void onSuccess(Document data) {
+                loading.setValue(false);
+                operationSuccess.setValue(true);
+                loadDocuments(taskId);
+            }
+
+            @Override
+            public void onError(String errorMsg) {
+                loading.setValue(false);
+                error.setValue("Upload failed: " + errorMsg);
+            }
+        });
+    }
+
+    public void deleteDocument(Document document) {
+        loading.setValue(true);
+        documentRepository.deleteDocument(document, new DocumentRepository.DocumentCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                loading.setValue(false);
+                operationSuccess.setValue(true);
+                loadDocuments(document.taskId);
+            }
+
+            @Override
+            public void onError(String errorMsg) {
+                loading.setValue(false);
+                error.setValue(errorMsg);
             }
         });
     }
