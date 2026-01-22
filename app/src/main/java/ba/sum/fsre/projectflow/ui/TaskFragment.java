@@ -39,14 +39,18 @@ public class TaskFragment extends Fragment {
     private ProgressBar progressBar;
     private TextView emptyState;
     private TextView titleTextView;
+
+    // NEW: Filter Views
+    private TextView filterAll, filterTodo, filterInProgress, filterDone, filterBlocked;
+
     private List<Task> allTasks = new ArrayList<>();
     private String projectId;
     private String projectName;
+    private String currentFilter = "all";
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         if (getArguments() != null) {
             projectId = getArguments().getString("projectId");
             projectName = getArguments().getString("projectName");
@@ -62,6 +66,7 @@ public class TaskFragment extends Fragment {
 
         initializeViews(view);
         setupRecyclerView();
+        setupFilters(view); // NEW
         setupFAB(view);
         observeViewModel();
 
@@ -77,6 +82,13 @@ public class TaskFragment extends Fragment {
         progressBar = view.findViewById(R.id.progressBar);
         emptyState = view.findViewById(R.id.emptyState);
         titleTextView = view.findViewById(R.id.title);
+
+        // NEW: Init Filters
+        filterAll = view.findViewById(R.id.filterAll);
+        filterTodo = view.findViewById(R.id.filterTodo);
+        filterInProgress = view.findViewById(R.id.filterInProgress);
+        filterDone = view.findViewById(R.id.filterDone);
+        filterBlocked = view.findViewById(R.id.filterBlocked);
 
         Toolbar toolbar = view.findViewById(R.id.toolbar);
         AppCompatActivity activity = (AppCompatActivity) requireActivity();
@@ -95,12 +107,60 @@ public class TaskFragment extends Fragment {
         }
     }
 
+    private void setupFilters(View view) {
+        filterAll.setOnClickListener(v -> applyFilter("all", filterAll));
+        filterTodo.setOnClickListener(v -> applyFilter("todo", filterTodo));
+        filterInProgress.setOnClickListener(v -> applyFilter("in_progress", filterInProgress));
+        filterDone.setOnClickListener(v -> applyFilter("done", filterDone));
+        filterBlocked.setOnClickListener(v -> applyFilter("blocked", filterBlocked));
+    }
+
+    private void applyFilter(String filter, TextView selectedView) {
+        currentFilter = filter;
+
+        // Reset styles
+        resetFilterStyles();
+
+        // Highlight selected
+        selectedView.setBackgroundResource(R.drawable.bg_filter_selected);
+        selectedView.setTextColor(requireContext().getColor(R.color.white));
+
+        // Filter List
+        List<Task> filteredTasks = new ArrayList<>();
+        for (Task task : allTasks) {
+            String status = task.status != null ? task.status.toLowerCase() : "todo";
+            if ("all".equals(filter) || filter.equals(status)) {
+                filteredTasks.add(task);
+            }
+        }
+
+        // Update Adapter
+        taskAdapter.updateTasks(filteredTasks);
+
+        // Update Empty State logic
+        if (filteredTasks.isEmpty()) {
+            emptyState.setVisibility(View.VISIBLE);
+            tasksRecyclerView.setVisibility(View.GONE);
+            emptyState.setText(allTasks.isEmpty() ? "No tasks in project" : "No tasks match filter");
+        } else {
+            emptyState.setVisibility(View.GONE);
+            tasksRecyclerView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void resetFilterStyles() {
+        TextView[] filters = {filterAll, filterTodo, filterInProgress, filterDone, filterBlocked};
+        for (TextView view : filters) {
+            view.setBackgroundResource(R.drawable.bg_filter_unselected);
+            view.setTextColor(requireContext().getColor(R.color.text_primary));
+        }
+    }
+
     private void setupRecyclerView() {
         tasksRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         taskAdapter = new TaskAdapter(new ArrayList<>(), new TaskAdapter.OnTaskClickListener() {
             @Override
             public void onTaskClick(Task task) {
-                // Open task detail
                 Intent intent = new Intent(getActivity(), TaskDetailActivity.class);
                 intent.putExtra("task", task);
                 startActivity(intent);
@@ -118,7 +178,6 @@ public class TaskFragment extends Fragment {
         FloatingActionButton fabAddTask = view.findViewById(R.id.fabAddTask);
         if (fabAddTask != null) {
             fabAddTask.setOnClickListener(v -> {
-                // Open create task activity
                 Intent intent = new Intent(getActivity(), CreateTaskActivity.class);
                 intent.putExtra("projectId", projectId);
                 intent.putExtra("projectName", projectName);
@@ -134,21 +193,11 @@ public class TaskFragment extends Fragment {
                 .setTitle(task.title)
                 .setItems(options, (dialog, which) -> {
                     switch (which) {
-                        case 0:
-                            viewModel.updateTaskStatus(task.id, "todo");
-                            break;
-                        case 1:
-                            viewModel.updateTaskStatus(task.id, "in_progress");
-                            break;
-                        case 2:
-                            viewModel.updateTaskStatus(task.id, "done");
-                            break;
-                        case 3:
-                            viewModel.updateTaskStatus(task.id, "blocked");
-                            break;
-                        case 4:
-                            confirmDeleteTask(task);
-                            break;
+                        case 0: viewModel.updateTaskStatus(task.id, "todo"); break;
+                        case 1: viewModel.updateTaskStatus(task.id, "in_progress"); break;
+                        case 2: viewModel.updateTaskStatus(task.id, "done"); break;
+                        case 3: viewModel.updateTaskStatus(task.id, "blocked"); break;
+                        case 4: confirmDeleteTask(task); break;
                     }
                 })
                 .show();
@@ -158,9 +207,7 @@ public class TaskFragment extends Fragment {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Delete Task")
                 .setMessage("Are you sure you want to delete \"" + task.title + "\"?")
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    viewModel.deleteTask(task.id);
-                })
+                .setPositiveButton("Delete", (dialog, which) -> viewModel.deleteTask(task.id))
                 .setNegativeButton("Cancel", null)
                 .show();
     }
@@ -172,12 +219,15 @@ public class TaskFragment extends Fragment {
     private void observeViewModel() {
         viewModel.getTasks().observe(getViewLifecycleOwner(), tasks -> {
             allTasks = tasks != null ? tasks : new ArrayList<>();
-            taskAdapter.updateTasks(allTasks);
-
-            if (emptyState != null) {
-                emptyState.setVisibility(allTasks.isEmpty() ? View.VISIBLE : View.GONE);
-                tasksRecyclerView.setVisibility(allTasks.isEmpty() ? View.GONE : View.VISIBLE);
+            // Apply current filter again to refresh view
+            TextView currentView = filterAll; // default
+            switch(currentFilter) {
+                case "todo": currentView = filterTodo; break;
+                case "in_progress": currentView = filterInProgress; break;
+                case "done": currentView = filterDone; break;
+                case "blocked": currentView = filterBlocked; break;
             }
+            applyFilter(currentFilter, currentView);
         });
 
         viewModel.getLoading().observe(getViewLifecycleOwner(), isLoading -> {
@@ -187,15 +237,12 @@ public class TaskFragment extends Fragment {
         });
 
         viewModel.getError().observe(getViewLifecycleOwner(), error -> {
-            if (error != null && !error.isEmpty()) {
-                Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
-            }
+            if (error != null && !error.isEmpty()) Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
         });
 
         viewModel.getOperationSuccess().observe(getViewLifecycleOwner(), success -> {
             if (success != null && success) {
                 Toast.makeText(getContext(), "Task updated", Toast.LENGTH_SHORT).show();
-                // Refresh tasks
                 loadTasks();
             }
         });

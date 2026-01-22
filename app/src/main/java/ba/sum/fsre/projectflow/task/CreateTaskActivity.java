@@ -26,7 +26,6 @@ import java.util.Map;
 
 import ba.sum.fsre.projectflow.R;
 import ba.sum.fsre.projectflow.model.Project;
-import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.model.TeamMemberWithDetails;
 import ba.sum.fsre.projectflow.network.RetrofitClient;
 import ba.sum.fsre.projectflow.network.SupabaseApi;
@@ -47,11 +46,13 @@ public class CreateTaskActivity extends AppCompatActivity {
     private String projectName;
     private Calendar dueDateCalendar = Calendar.getInstance();
 
-    // For storing team members
     private List<TeamMemberWithDetails> teamMembers = new ArrayList<>();
     private Map<String, String> displayNameToUserIdMap = new HashMap<>();
 
-    private final String[] statusOptions = {"todo", "in_progress", "done", "blocked"};
+    // CHANGED: Separated Display values from Database values
+    private final String[] statusDisplayOptions = {"Todo", "In Progress", "Done", "Blocked"};
+    private final String[] statusValueOptions = {"todo", "in_progress", "done", "blocked"};
+
     private final String[] priorityOptions = {"low", "medium", "high"};
 
     @Override
@@ -88,15 +89,12 @@ public class CreateTaskActivity extends AppCompatActivity {
         createButton = findViewById(R.id.createButton);
         cancelButton = findViewById(R.id.cancelButton);
 
-        // Get TextInputLayouts
         assignedToLayout = findViewById(R.id.assignedToLayout);
         statusLayout = findViewById(R.id.statusLayout);
         priorityLayout = findViewById(R.id.priorityLayout);
         dueDateLayout = findViewById(R.id.dueDateLayout);
 
-        // Set form title if project name is available
         TextView formTitle = findViewById(R.id.formTitle);
-        TextView formSubtitle = findViewById(R.id.formSubtitle);
         if (projectName != null) {
             formTitle.setText("Create Task for " + projectName);
         }
@@ -137,14 +135,14 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void setupDropdowns() {
-        // Status dropdown
+        // CHANGED: Use Display Options for the Adapter
         ArrayAdapter<String> statusAdapter = new ArrayAdapter<>(
                 this,
                 android.R.layout.simple_dropdown_item_1line,
-                statusOptions
+                statusDisplayOptions
         );
         statusInput.setAdapter(statusAdapter);
-        statusInput.setText(statusOptions[0], false);
+        statusInput.setText(statusDisplayOptions[0], false); // Default to Todo
 
         // Priority dropdown
         ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(
@@ -157,35 +155,16 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
-        // Set click listeners for dropdowns to show dropdown when clicked
-        assignedToLayout.setEndIconOnClickListener(v -> {
-            assignedToInput.showDropDown();
-        });
+        assignedToLayout.setEndIconOnClickListener(v -> assignedToInput.showDropDown());
+        assignedToLayout.setOnClickListener(v -> assignedToInput.showDropDown());
 
-        assignedToLayout.setOnClickListener(v -> {
-            assignedToInput.showDropDown();
-        });
+        statusLayout.setEndIconOnClickListener(v -> statusInput.showDropDown());
+        statusLayout.setOnClickListener(v -> statusInput.showDropDown());
 
-        statusLayout.setEndIconOnClickListener(v -> {
-            statusInput.showDropDown();
-        });
+        priorityLayout.setEndIconOnClickListener(v -> priorityInput.showDropDown());
+        priorityLayout.setOnClickListener(v -> priorityInput.showDropDown());
 
-        statusLayout.setOnClickListener(v -> {
-            statusInput.showDropDown();
-        });
-
-        priorityLayout.setEndIconOnClickListener(v -> {
-            priorityInput.showDropDown();
-        });
-
-        priorityLayout.setOnClickListener(v -> {
-            priorityInput.showDropDown();
-        });
-
-        // Date picker icon click listener
-        dueDateLayout.setEndIconOnClickListener(v -> {
-            showDatePicker();
-        });
+        dueDateLayout.setEndIconOnClickListener(v -> showDatePicker());
     }
 
     private void setupDatePicker() {
@@ -216,10 +195,7 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void loadProjectAndTeamMembers() {
-        // First, get the project to get teamId
         SupabaseApi api = RetrofitClient.getClient(this).create(SupabaseApi.class);
-
-        // Get project with team info
         String select = "*,team:teams(*)";
         api.getProjectById("eq." + projectId, select).enqueue(new Callback<List<Project>>() {
             @Override
@@ -227,42 +203,26 @@ public class CreateTaskActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     Project project = response.body().get(0);
                     String teamId = project.teamId;
-
-                    if (teamId != null) {
-                        // Now load team members for this team
-                        loadTeamMembers(teamId);
-                    } else {
-                        Toast.makeText(CreateTaskActivity.this,
-                                "Project team not found", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(CreateTaskActivity.this,
-                            "Failed to load project", Toast.LENGTH_SHORT).show();
+                    if (teamId != null) loadTeamMembers(teamId);
                 }
             }
 
             @Override
             public void onFailure(Call<List<Project>> call, Throwable t) {
-                Toast.makeText(CreateTaskActivity.this,
-                        "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(CreateTaskActivity.this, "Network error", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void loadTeamMembers(String teamId) {
         SupabaseApi api = RetrofitClient.getClient(this).create(SupabaseApi.class);
-
-        // Get team members using the view
         api.getTeamMembersWithDetails("eq." + teamId).enqueue(new Callback<List<TeamMemberWithDetails>>() {
             @Override
-            public void onResponse(Call<List<TeamMemberWithDetails>> call,
-                                   Response<List<TeamMemberWithDetails>> response) {
+            public void onResponse(Call<List<TeamMemberWithDetails>> call, Response<List<TeamMemberWithDetails>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     teamMembers.clear();
                     displayNameToUserIdMap.clear();
                     List<String> memberDisplayNames = new ArrayList<>();
-
-                    // Add "Unassigned" option
                     memberDisplayNames.add("Unassigned");
                     displayNameToUserIdMap.put("Unassigned", null);
 
@@ -273,7 +233,6 @@ public class CreateTaskActivity extends AppCompatActivity {
                         displayNameToUserIdMap.put(displayName, teamMember.userId);
                     }
 
-                    // Setup dropdown adapter
                     ArrayAdapter<String> adapter = new ArrayAdapter<>(
                             CreateTaskActivity.this,
                             android.R.layout.simple_dropdown_item_1line,
@@ -281,33 +240,18 @@ public class CreateTaskActivity extends AppCompatActivity {
                     );
                     assignedToInput.setAdapter(adapter);
 
-                    // Set item click listener
                     assignedToInput.setOnItemClickListener((parent, view, position, id) -> {
                         String selectedDisplayName = adapter.getItem(position);
                         String selectedUserId = displayNameToUserIdMap.get(selectedDisplayName);
                         assignedToInput.setTag(selectedUserId);
                     });
-
-                    // Set default to "Unassigned"
                     assignedToInput.setText("Unassigned", false);
-
-                    // Show count of loaded members
-                    if (!memberDisplayNames.isEmpty()) {
-                        // Toast is optional, can remove if not needed
-                        // Toast.makeText(CreateTaskActivity.this,
-                        //     "Loaded " + (memberDisplayNames.size() - 1) + " team members",
-                        //     Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(CreateTaskActivity.this,
-                            "Failed to load team members", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<TeamMemberWithDetails>> call, Throwable t) {
-                Toast.makeText(CreateTaskActivity.this,
-                        "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(CreateTaskActivity.this, "Failed to load members", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -317,22 +261,25 @@ public class CreateTaskActivity extends AppCompatActivity {
         String description = descriptionInput.getText().toString().trim();
         String dueDate = dueDateInput.getText().toString().trim();
         String estimatedHoursStr = estimatedHoursInput.getText().toString().trim();
-        String status = statusInput.getText().toString().trim();
         String priority = priorityInput.getText().toString().trim();
 
-        // Get assigned user ID from tag or null if not selected
-        String assignedTo = assignedToInput.getTag() != null ?
-                assignedToInput.getTag().toString() : null;
+        // CHANGED: Map Display Status back to Database Value
+        String selectedStatusDisplay = statusInput.getText().toString().trim();
+        String status = "todo"; // Default
+        for (int i = 0; i < statusDisplayOptions.length; i++) {
+            if (statusDisplayOptions[i].equals(selectedStatusDisplay)) {
+                status = statusValueOptions[i];
+                break;
+            }
+        }
 
-        // If "Unassigned" is selected, set to null
+        String assignedTo = assignedToInput.getTag() != null ? assignedToInput.getTag().toString() : null;
         if ("Unassigned".equals(assignedToInput.getText().toString())) {
             assignedTo = null;
         }
 
-        // Validation
         if (title.isEmpty()) {
             titleInput.setError("Title is required");
-            titleInput.requestFocus();
             return;
         }
 
@@ -340,29 +287,14 @@ public class CreateTaskActivity extends AppCompatActivity {
         if (!estimatedHoursStr.isEmpty()) {
             try {
                 estimatedHours = Double.parseDouble(estimatedHoursStr);
-                if (estimatedHours < 0) {
-                    estimatedHoursInput.setError("Must be positive");
-                    return;
-                }
             } catch (NumberFormatException e) {
                 estimatedHoursInput.setError("Invalid number format");
                 return;
             }
         }
 
-        // Create task using viewModel
-        viewModel.createTask(
-                projectId,
-                title,
-                description,
-                assignedTo,
-                status,
-                priority,
-                dueDate.isEmpty() ? null : dueDate,
-                estimatedHours,
-                null, // startTime
-                null  // endTime
-        );
+        viewModel.createTask(projectId, title, description, assignedTo, status, priority,
+                dueDate.isEmpty() ? null : dueDate, estimatedHours, null, null);
     }
 
     @Override
