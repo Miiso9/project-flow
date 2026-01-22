@@ -38,7 +38,6 @@ public class AuthInterceptor implements Interceptor {
 
         Response response = chain.proceed(request);
 
-        // 🔴 Access token expired
         if (response.code() == 401) {
             response.close();
 

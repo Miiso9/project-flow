@@ -30,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
 
         tokenManager = new TokenManager(this);
 
-        // Check authentication before loading UI
         if (!checkAuthentication()) {
             return;
         }
@@ -42,14 +41,12 @@ public class MainActivity extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
             
-            // Apply bottom padding to BottomNavigationView
             bottomNavigation.setPadding(0, 0, 0, systemBars.bottom);
             return insets;
         });
 
         setupBottomNavigation();
 
-        // Load default fragment
         if (savedInstanceState == null) {
             loadFragment(new HomeFragment());
         }
