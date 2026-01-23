@@ -4,7 +4,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -24,6 +23,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
     public interface OnProjectClickListener {
         void onProjectClick(Project project);
         void onProjectLongClick(Project project);
+        void onMenuClick(View view, Project project);
     }
 
     public ProjectAdapter(OnProjectClickListener listener) {
@@ -61,6 +61,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         private TextView projectDescription;
         private TextView startDate;
         private TextView endDate;
+        private TextView teamName;
 
         public ProjectViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -70,14 +71,21 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
             projectDescription = itemView.findViewById(R.id.projectDescription);
             startDate = itemView.findViewById(R.id.startDate);
             endDate = itemView.findViewById(R.id.endDate);
+            teamName = itemView.findViewById(R.id.teamName);
         }
 
         public void bind(Project project, OnProjectClickListener listener) {
             projectName.setText(project.name);
             projectDescription.setText(project.description != null ? project.description : "");
-            
+
             startDate.setText(project.startDate != null ? project.startDate : "-");
             endDate.setText(project.endDate != null ? project.endDate : "-");
+
+            if (project.teamName != null) {
+                teamName.setText(project.teamName);
+            } else {
+                teamName.setText("");
+            }
 
             String status = project.status != null ? project.status : "active";
             switch (status.toLowerCase()) {
@@ -85,31 +93,35 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
                     statusLabel.setText("Completed");
                     statusLabel.setBackgroundResource(R.drawable.bg_status_completed);
                     statusLabel.setTextColor(itemView.getContext().getColor(R.color.status_completed_text));
-                    menuIcon.setImageResource(R.drawable.ic_checkmark);
                     break;
                 case "on_hold":
                     statusLabel.setText("On Hold");
                     statusLabel.setBackgroundResource(R.drawable.bg_status_on_hold);
                     statusLabel.setTextColor(itemView.getContext().getColor(R.color.status_on_hold_text));
-                    menuIcon.setImageResource(R.drawable.ic_menu_dots);
                     break;
                 case "cancelled":
                     statusLabel.setText("Cancelled");
                     statusLabel.setBackgroundResource(R.drawable.bg_status_cancelled);
                     statusLabel.setTextColor(itemView.getContext().getColor(R.color.status_cancelled_text));
-                    menuIcon.setImageResource(R.drawable.ic_menu_dots);
                     break;
                 default: // active
                     statusLabel.setText("Active");
                     statusLabel.setBackgroundResource(R.drawable.bg_status_active);
                     statusLabel.setTextColor(itemView.getContext().getColor(R.color.status_active_text));
-                    menuIcon.setImageResource(R.drawable.ic_menu_dots);
                     break;
             }
+
+            menuIcon.setImageResource(R.drawable.ic_menu_dots);
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onProjectClick(project);
+                }
+            });
+
+            menuIcon.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onMenuClick(v, project);
                 }
             });
 

@@ -3,6 +3,7 @@ package ba.sum.fsre.projectflow.project;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -21,21 +22,37 @@ import java.util.List;
 
 import ba.sum.fsre.projectflow.R;
 import ba.sum.fsre.projectflow.model.Project;
+import ba.sum.fsre.projectflow.model.TeamMember;
+import ba.sum.fsre.projectflow.network.RetrofitClient;
+import ba.sum.fsre.projectflow.network.SupabaseApi;
+import ba.sum.fsre.projectflow.storage.TokenManager;
+import ba.sum.fsre.projectflow.ui.TaskFragment;
 import ba.sum.fsre.projectflow.viewmodel.ProjectViewModel;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ProjectListActivity extends AppCompatActivity {
 
     private ProjectViewModel viewModel;
     private ProjectAdapter adapter;
+
     private ProgressBar progressBar;
     private LinearLayout emptyState;
     private TextView headerSubtitle;
     private TextView filterAll, filterActive, filterCompleted, filterOnHold;
 
+    private View mainContentLayout;
+    private FloatingActionButton fabCreate;
+    private FrameLayout fragmentContainer;
+
     private String teamId;
     private String teamName;
     private List<Project> allProjects = new ArrayList<>();
     private String currentFilter = "all";
+
+    private String myRole = "member";
+    private String currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,12 +62,62 @@ public class ProjectListActivity extends AppCompatActivity {
         teamId = getIntent().getStringExtra("team_id");
         teamName = getIntent().getStringExtra("team_name");
 
+        currentUserId = new TokenManager(this).getUserId();
+
         viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
+
+        mainContentLayout = findViewById(R.id.mainContentLayout);
+        fabCreate = findViewById(R.id.fabCreateProject);
+        fragmentContainer = findViewById(R.id.fragmentContainer);
 
         setupToolbar();
         setupUI();
         setupFilters();
         observeViewModel();
+
+        fetchUserRole();
+
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                mainContentLayout.setVisibility(View.GONE);
+                fabCreate.hide();
+                fragmentContainer.setVisibility(View.VISIBLE);
+            } else {
+                mainContentLayout.setVisibility(View.VISIBLE);
+                fabCreate.show();
+                fragmentContainer.setVisibility(View.GONE);
+
+                if (getSupportActionBar() != null) {
+                    getSupportActionBar().setTitle(teamName != null ? teamName + " - Projects" : "Projects");
+                }
+            }
+        });
+    }
+
+    private void fetchUserRole() {
+        if (teamId == null || currentUserId == null) return;
+
+        SupabaseApi api = RetrofitClient.getClient(this).create(SupabaseApi.class);
+
+        api.getTeamMembers("eq." + teamId, "*").enqueue(new Callback<List<TeamMember>>() {
+            @Override
+            public void onResponse(Call<List<TeamMember>> call, Response<List<TeamMember>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<TeamMember> members = response.body();
+
+                    for (TeamMember member : members) {
+                        if (member.userId != null && member.userId.equals(currentUserId)) {
+                            myRole = member.role;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<TeamMember>> call, Throwable t) {
+            }
+        });
     }
 
     private void setupToolbar() {
@@ -64,7 +131,11 @@ public class ProjectListActivity extends AppCompatActivity {
 
     @Override
     public boolean onSupportNavigateUp() {
-        finish();
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStack();
+        } else {
+            finish();
+        }
         return true;
     }
 
@@ -80,26 +151,68 @@ public class ProjectListActivity extends AppCompatActivity {
 
         RecyclerView rvProjects = findViewById(R.id.rvProjects);
         rvProjects.setLayoutManager(new LinearLayoutManager(this));
-        
+
         adapter = new ProjectAdapter(new ProjectAdapter.OnProjectClickListener() {
             @Override
             public void onProjectClick(Project project) {
-                Toast.makeText(ProjectListActivity.this, "Project: " + project.name, Toast.LENGTH_SHORT).show();
+                TaskFragment taskFragment = TaskFragment.newInstance(project.id, project.name);
+
+                getSupportFragmentManager().beginTransaction()
+                        .setCustomAnimations(
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out,
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out
+                        )
+                        .replace(R.id.fragmentContainer, taskFragment)
+                        .addToBackStack("projects")
+                        .commit();
             }
 
             @Override
             public void onProjectLongClick(Project project) {
                 showProjectOptionsDialog(project);
             }
+
+            @Override
+            public void onMenuClick(View view, Project project) {
+                showPopupMenu(view, project);
+            }
         });
         rvProjects.setAdapter(adapter);
 
-        FloatingActionButton fabCreate = findViewById(R.id.fabCreateProject);
         fabCreate.setOnClickListener(v -> {
             Intent intent = new Intent(this, CreateProjectActivity.class);
             intent.putExtra("team_id", teamId);
             startActivity(intent);
         });
+    }
+
+    private void showPopupMenu(View view, Project project) {
+        android.widget.PopupMenu popup = new android.widget.PopupMenu(this, view);
+
+        popup.getMenu().add(0, 1, 0, "Edit");
+
+        if (myRole != null && myRole.equalsIgnoreCase("owner")) {
+            popup.getMenu().add(0, 2, 1, "Delete");
+        }
+
+        popup.setOnMenuItemClickListener(item -> {
+            String title = item.getTitle().toString();
+
+            if (title.equals("Edit")) {
+                Intent intent = new Intent(ProjectListActivity.this, EditProjectActivity.class);
+                intent.putExtra("project_data", project);
+                startActivity(intent);
+                return true;
+            } else if (title.equals("Delete")) {
+                confirmDeleteProject(project);
+                return true;
+            }
+            return false;
+        });
+
+        popup.show();
     }
 
     private void setupFilters() {
@@ -111,8 +224,8 @@ public class ProjectListActivity extends AppCompatActivity {
 
     private void applyFilter(String filter, TextView selectedView) {
         currentFilter = filter;
-
         resetFilterStyles();
+
         selectedView.setBackgroundResource(R.drawable.bg_filter_selected);
         selectedView.setTextColor(getColor(R.color.white));
 
@@ -149,18 +262,26 @@ public class ProjectListActivity extends AppCompatActivity {
     }
 
     private void showProjectOptionsDialog(Project project) {
-        String[] options = {"Edit", "Delete"};
-        
+        // Fallback for long click - check role here too
+        boolean isOwner = myRole != null && myRole.equalsIgnoreCase("owner");
+
+        List<String> optionsList = new ArrayList<>();
+        optionsList.add("Edit");
+        if (isOwner) optionsList.add("Delete");
+
+        String[] options = optionsList.toArray(new String[0]);
+
         new AlertDialog.Builder(this)
                 .setTitle(project.name)
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
+                    String selected = options[which];
+                    if (selected.equals("Edit")) {
                         Intent intent = new Intent(this, CreateProjectActivity.class);
                         intent.putExtra("team_id", teamId);
                         intent.putExtra("project", project);
                         intent.putExtra("is_edit", true);
                         startActivity(intent);
-                    } else {
+                    } else if (selected.equals("Delete")) {
                         confirmDeleteProject(project);
                     }
                 })
@@ -205,14 +326,10 @@ public class ProjectListActivity extends AppCompatActivity {
 
     private TextView getSelectedFilterView() {
         switch (currentFilter) {
-            case "active":
-                return filterActive;
-            case "completed":
-                return filterCompleted;
-            case "on_hold":
-                return filterOnHold;
-            default:
-                return filterAll;
+            case "active": return filterActive;
+            case "completed": return filterCompleted;
+            case "on_hold": return filterOnHold;
+            default: return filterAll;
         }
     }
 

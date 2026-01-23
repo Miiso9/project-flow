@@ -3,19 +3,25 @@ package ba.sum.fsre.projectflow.network;
 import java.util.List;
 
 import ba.sum.fsre.projectflow.model.AuthResponse;
+import ba.sum.fsre.projectflow.model.Comment;
+import ba.sum.fsre.projectflow.model.Document;
 import ba.sum.fsre.projectflow.model.LoginRequest;
 import ba.sum.fsre.projectflow.model.Project;
+import ba.sum.fsre.projectflow.model.RefreshTokenRequest;
 import ba.sum.fsre.projectflow.model.RegisterRequest;
 import ba.sum.fsre.projectflow.model.Task;
 import ba.sum.fsre.projectflow.model.Team;
 import ba.sum.fsre.projectflow.model.TeamInvitation;
 import ba.sum.fsre.projectflow.model.TeamMember;
+import ba.sum.fsre.projectflow.model.TeamMemberWithDetails;
 import ba.sum.fsre.projectflow.model.User;
+import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Headers;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
@@ -24,6 +30,10 @@ public interface SupabaseApi {
 
     @POST("auth/v1/token?grant_type=password")
     Call<AuthResponse> login(@Body LoginRequest body);
+
+    @Headers("No-Authentication: true")
+    @POST("auth/v1/token?grant_type=refresh_token")
+    Call<AuthResponse> refreshToken(@Body RefreshTokenRequest body);
 
     @POST("auth/v1/signup")
     Call<AuthResponse> register(@Body RegisterRequest body);
@@ -49,6 +59,9 @@ public interface SupabaseApi {
 
     @DELETE("rest/v1/teams")
     Call<Void> deleteTeam(@Query("id") String idFilter);
+
+    @GET("rest/v1/teams")
+    Call<List<Team>> getTeamById(@Query("id") String idFilter);
 
     @POST("rest/v1/team_members")
     Call<Void> addTeamMember(@Body TeamMember member);
@@ -101,13 +114,17 @@ public interface SupabaseApi {
     Call<List<Project>> getProjectById(@Query("id") String idFilter, @Query("select") String select);
 
     @GET("rest/v1/tasks")
-    Call<List<Task>> getTasks(@Query("project_id") String projectIdFilter, @Query("select") String select, @Query("order") String order);
+    Call<List<Task>> getTasksByProject(@Query("project_id") String projectIdFilter,
+                                       @Query("select") String select,
+                                       @Query("order") String order);
 
     @GET("rest/v1/tasks")
-    Call<List<Task>> getTasksByAssignee(@Query("assigned_to") String assigneeFilter, @Query("select") String select, @Query("order") String order);
+    Call<List<Task>> getTasks(@Query("select") String select,
+                              @Query("order") String order);
 
     @GET("rest/v1/tasks")
-    Call<List<Task>> getTaskById(@Query("id") String idFilter, @Query("select") String select);
+    Call<List<Task>> getTaskById(@Query("id") String idFilter,
+                                 @Query("select") String select);
 
     @POST("rest/v1/tasks")
     Call<List<Task>> createTask(@Body Task task, @Header("Prefer") String prefer);
@@ -117,4 +134,56 @@ public interface SupabaseApi {
 
     @DELETE("rest/v1/tasks")
     Call<Void> deleteTask(@Query("id") String idFilter);
+
+    @GET("rest/v1/tasks")
+    Call<List<Task>> getMyTasks(@Query("assigned_to") String assignedToFilter,
+                                @Query("select") String select,
+                                @Query("order") String order);
+
+    @GET("rest/v1/team_members_with_details")
+    Call<List<TeamMemberWithDetails>> getTeamMembersWithDetails(@Query("team_id") String teamIdFilter);
+
+    @GET("rest/v1/team_members_with_details")
+    Call<List<TeamMemberWithDetails>> getTeamMembersByProject(@Query("select") String select);
+
+    @GET("rest/v1/projects")
+    Call<List<Project>> getProjectWithTeam(@Query("id") String projectIdFilter,
+                                           @Query("select") String select);
+
+    @GET("rest/v1/comments")
+    Call<List<Comment>> getCommentsForTask(
+            @Query("task_id") String taskIdFilter,
+            @Query("select") String select,
+            @Query("order") String order
+    );
+
+    @POST("rest/v1/comments")
+    Call<List<Comment>> createComment(@Body Comment comment, @Header("Prefer") String prefer);
+
+    @DELETE("rest/v1/comments")
+    Call<Void> deleteComment(@Query("id") String idFilter);
+
+    @retrofit2.http.Multipart
+    @POST("storage/v1/object/task_documents/{path}")
+    Call<Void> uploadFile(
+            @retrofit2.http.Path("path") String path,
+            @retrofit2.http.Part MultipartBody.Part file
+    );
+
+    @GET("rest/v1/documents")
+    Call<List<Document>> getDocumentsForTask(
+            @Query("task_id") String taskId,
+            @Query("select") String select,
+            @Query("order") String order
+    );
+
+    @POST("rest/v1/documents")
+    Call<List<Document>> createDocument(@Body Document document);
+
+    @DELETE("rest/v1/documents")
+    Call<Void> deleteDocument(@Query("id") String id);
+
+    @DELETE("storage/v1/object/task_documents/{path}")
+    Call<Void> deleteFileFromStorage(@retrofit2.http.Path("path") String path);
+
 }

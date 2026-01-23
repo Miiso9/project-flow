@@ -333,4 +333,22 @@ public class TeamRepository {
             }
         });
     }
+
+    public void getTeamById(String teamId, DataCallback<Team> callback) {
+        api.getTeamById("eq." + teamId).enqueue(new Callback<List<Team>>() {
+            @Override
+            public void onResponse(Call<List<Team>> call, Response<List<Team>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    callback.onSuccess(response.body().get(0));
+                } else {
+                    callback.onError("Team not found");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Team>> call, Throwable t) {
+                callback.onError("Network error: " + t.getMessage());
+            }
+        });
+    }
 }

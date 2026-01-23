@@ -49,6 +49,19 @@
         <activity
             android:name=".task.TaskDetailActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".task.CreateTaskActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".task.EditTaskActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".project.EditProjectActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>
