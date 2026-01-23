@@ -37,11 +37,11 @@ public class TokenManager {
     }
 
     public void clearTokens() {
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.remove("access_token");
-        editor.remove("refresh_token");
-        editor.remove("user_id");
-        editor.apply();
+        prefs.edit()
+                .remove(TOKEN)
+                .remove(REFRESH_TOKEN)
+                .remove(USER_ID)
+                .apply();
     }
 
     public void saveUserId(String userId) {

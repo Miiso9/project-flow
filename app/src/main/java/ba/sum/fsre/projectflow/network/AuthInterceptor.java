@@ -10,6 +10,7 @@ import ba.sum.fsre.projectflow.model.AuthResponse;
 import ba.sum.fsre.projectflow.model.RefreshTokenRequest;
 import ba.sum.fsre.projectflow.storage.TokenManager;
 import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import retrofit2.Call;
@@ -29,30 +30,37 @@ public class AuthInterceptor implements Interceptor {
     @Override
     public Response intercept(Chain chain) throws IOException {
         Request original = chain.request();
-
+        if (original.header("No-Authentication") != null) {
+            return chain.proceed(original.newBuilder()
+                    .removeHeader("No-Authentication")
+                    .build());
+        }
         String accessToken = tokenManager.getToken();
+        Request.Builder builder = original.newBuilder();
 
-        Request request = original.newBuilder()
-                .addHeader("Authorization", "Bearer " + accessToken)
-                .build();
+        if (accessToken != null) {
+            builder.addHeader("Authorization", "Bearer " + accessToken);
+        }
 
-        Response response = chain.proceed(request);
+        Response response = chain.proceed(builder.build());
 
         if (response.code() == 401) {
-            response.close();
+            synchronized (this) {
 
-            boolean refreshed = refreshToken();
+                String latestToken = tokenManager.getToken();
 
-            if (refreshed) {
-                String newToken = tokenManager.getToken();
+                boolean alreadyRefreshed = latestToken != null && !latestToken.equals(accessToken);
 
-                Request retry = original.newBuilder()
-                        .addHeader("Authorization", "Bearer " + newToken)
-                        .build();
+                if (alreadyRefreshed || refreshToken()) {
+                    response.close();
 
-                return chain.proceed(retry);
-            } else {
-                forceLogout();
+                    Request retry = original.newBuilder()
+                            .header("Authorization", "Bearer " + tokenManager.getToken())
+                            .build();
+                    return chain.proceed(retry);
+                } else {
+                    forceLogout();
+                }
             }
         }
 
@@ -61,35 +69,42 @@ public class AuthInterceptor implements Interceptor {
 
     private boolean refreshToken() {
         try {
+            OkHttpClient cleanClient = new OkHttpClient.Builder()
+                    .addInterceptor(chain -> chain.proceed(
+                            chain.request().newBuilder()
+                                    .addHeader("apikey", Constants.ANON_KEY)
+                                    .build()
+                    ))
+                    .build();
+
             Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl(Constants.BASE_URL + "/")
+                    .client(cleanClient)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
 
             SupabaseApi api = retrofit.create(SupabaseApi.class);
 
-            Call<AuthResponse> call = api.refreshToken(
-                    new RefreshTokenRequest(tokenManager.getRefreshToken())
-            );
+            String refreshToken = tokenManager.getRefreshToken();
+            if (refreshToken == null) return false;
+
+            Call<AuthResponse> call = api.refreshToken(new RefreshTokenRequest(refreshToken));
 
             retrofit2.Response<AuthResponse> response = call.execute();
 
             if (response.isSuccessful() && response.body() != null) {
                 tokenManager.saveToken(response.body().accessToken);
                 tokenManager.saveRefreshToken(response.body().refreshToken);
-                RetrofitClient.resetClient();
                 return true;
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return false;
     }
 
     private void forceLogout() {
         tokenManager.clearTokens();
-
         Intent intent = new Intent(context, AuthActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         context.startActivity(intent);
