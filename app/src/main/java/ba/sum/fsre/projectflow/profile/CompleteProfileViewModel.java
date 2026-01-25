@@ -17,6 +17,8 @@ public class CompleteProfileViewModel extends ViewModel {
 
     private final MutableLiveData<Boolean> updateSuccess = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
+    // NEW: LiveData to hold the fetched user profile
+    private final MutableLiveData<User> userProfile = new MutableLiveData<>();
 
     public LiveData<Boolean> getUpdateSuccess() {
         return updateSuccess;
@@ -24,6 +26,11 @@ public class CompleteProfileViewModel extends ViewModel {
 
     public LiveData<String> getErrorMessage() {
         return errorMessage;
+    }
+
+    // NEW: Getter for the user profile
+    public LiveData<User> getUserProfile() {
+        return userProfile;
     }
 
     public void updateProfile(Context context, String userId, String phone, String city, String dateOfBirth, String gender) {
@@ -45,6 +52,7 @@ public class CompleteProfileViewModel extends ViewModel {
                         if (response.isSuccessful()) {
                             updateSuccess.postValue(true);
                         } else {
+                            // Try to parse the error message if possible, otherwise generic
                             updateSuccess.postValue(false);
                             errorMessage.postValue("Failed to update profile. Please try again.");
                         }
@@ -68,12 +76,14 @@ public class CompleteProfileViewModel extends ViewModel {
                     @Override
                     public void onResponse(Call<java.util.List<User>> call, Response<java.util.List<User>> response) {
                         if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                            User user = response.body().get(0);
+                            // Post the fetched user to the LiveData
+                            userProfile.postValue(response.body().get(0));
                         }
                     }
 
                     @Override
                     public void onFailure(Call<java.util.List<User>> call, Throwable t) {
+                        errorMessage.postValue("Failed to load current profile: " + t.getMessage());
                     }
                 });
     }

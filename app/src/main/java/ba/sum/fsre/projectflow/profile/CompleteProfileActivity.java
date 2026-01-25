@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -36,40 +37,50 @@ public class CompleteProfileActivity extends AppCompatActivity {
     private AutoCompleteTextView genderSpinner;
     private Button submitBtn;
     private ProgressBar progressBar;
+    private ImageView btnBack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_complete_profile);
-        
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
+        // Initialize Views
         phoneNumberEditText = findViewById(R.id.phoneNumber);
         cityEditText = findViewById(R.id.city);
         dateOfBirthEditText = findViewById(R.id.dateOfBirth);
         genderSpinner = findViewById(R.id.genderSpinner);
         submitBtn = findViewById(R.id.submitBtn);
         progressBar = findViewById(R.id.progressBar);
+        btnBack = findViewById(R.id.btnBack);
 
+        // Handle Back Button
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
+        // Setup Spinner Adapter
         ArrayAdapter<CharSequence> genderAdapter = ArrayAdapter.createFromResource(
                 this,
                 R.array.gender_options,
                 android.R.layout.simple_list_item_1
         );
         genderSpinner.setAdapter(genderAdapter);
-        genderSpinner.setText(genderAdapter.getItem(0).toString(), false);
+        // Do not set default text here, wait for data load or user input
 
+        // Setup Date Picker
         Calendar calendar = Calendar.getInstance();
         DatePickerDialog.OnDateSetListener dateSetListener = (view, year, month, dayOfMonth) -> {
             calendar.set(Calendar.YEAR, year);
             calendar.set(Calendar.MONTH, month);
             calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-            
+
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             String formattedDate = dateFormat.format(calendar.getTime());
             dateOfBirthEditText.setText(formattedDate);
@@ -85,8 +96,8 @@ public class CompleteProfileActivity extends AppCompatActivity {
             ).show();
         });
 
+        // Setup ViewModel
         viewModel = new ViewModelProvider(this).get(CompleteProfileViewModel.class);
-
         TokenManager tokenManager = new TokenManager(this);
         String userId = tokenManager.getUserId();
 
@@ -96,17 +107,40 @@ public class CompleteProfileActivity extends AppCompatActivity {
             return;
         }
 
+        // 1. Trigger fetching the current user data
+        progressBar.setVisibility(View.VISIBLE);
+        viewModel.getCurrentUser(this, userId);
+
+        // 2. Observe User Data to pre-fill fields
+        viewModel.getUserProfile().observe(this, user -> {
+            progressBar.setVisibility(View.GONE);
+            if (user != null) {
+                if (user.phone != null) phoneNumberEditText.setText(user.phone);
+                if (user.city != null) cityEditText.setText(user.city);
+                if (user.date_of_birth != null) dateOfBirthEditText.setText(user.date_of_birth);
+
+                if (user.gender != null) {
+                    // Normalize gender string (e.g., "Male" vs "male")
+                    String gender = user.gender;
+                    // Find the position in the adapter and set it, disabling filter to show all
+                    genderSpinner.setText(gender, false);
+                }
+            }
+        });
+
+        // Observe Update Success
         viewModel.getUpdateSuccess().observe(this, success -> {
             progressBar.setVisibility(View.GONE);
             submitBtn.setEnabled(true);
-            
+
             if (success) {
-                Toast.makeText(this, "Profile completed successfully!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Profile saved successfully!", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, MainActivity.class));
                 finish();
             }
         });
 
+        // Observe Errors
         viewModel.getErrorMessage().observe(this, errorMessage -> {
             if (errorMessage != null) {
                 progressBar.setVisibility(View.GONE);
@@ -115,11 +149,12 @@ public class CompleteProfileActivity extends AppCompatActivity {
             }
         });
 
+        // Submit Button Logic
         submitBtn.setOnClickListener(v -> {
             String phone = phoneNumberEditText.getText().toString().trim();
             String city = cityEditText.getText().toString().trim();
             String dateOfBirth = dateOfBirthEditText.getText().toString().trim();
-            String gender = genderSpinner.getText().toString().trim().toLowerCase();
+            String gender = genderSpinner.getText().toString().trim(); // Don't lowercase here if your DB expects Capitalized
 
             if (phone.isEmpty() || city.isEmpty() || dateOfBirth.isEmpty() || gender.isEmpty()) {
                 Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
@@ -139,6 +174,8 @@ public class CompleteProfileActivity extends AppCompatActivity {
             progressBar.setVisibility(View.VISIBLE);
             submitBtn.setEnabled(false);
 
+            // Pass the data to update
+            // Note: Ensure gender casing matches what your backend expects (e.g. "Male" vs "male")
             viewModel.updateProfile(this, userId, phone, city, dateOfBirth, gender);
         });
     }

@@ -186,4 +186,7 @@ public interface SupabaseApi {
     @DELETE("storage/v1/object/task_documents/{path}")
     Call<Void> deleteFileFromStorage(@retrofit2.http.Path("path") String path);
 
+    @POST("rest/v1/rpc/delete_user_account")
+    Call<Void> deleteAccount();
+
 }

@@ -11,7 +11,6 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Header -->
         <TextView
             android:id="@+id/headerTitle"
             android:layout_width="wrap_content"
@@ -23,7 +22,6 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
-        <!-- Profile Card -->
         <androidx.cardview.widget.CardView
             android:id="@+id/profileCard"
             android:layout_width="0dp"
@@ -43,7 +41,6 @@
                 android:padding="24dp"
                 android:gravity="center_horizontal">
 
-                <!-- Avatar -->
                 <ImageView
                     android:id="@+id/ivAvatar"
                     android:layout_width="80dp"
@@ -57,7 +54,7 @@
                     android:id="@+id/tvUserName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="User Name"
+                    android:text="Loading..."
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
@@ -67,7 +64,7 @@
                     android:id="@+id/tvUserEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="email@example.com"
+                    android:text=""
                     android:textSize="14sp"
                     android:textColor="@color/text_secondary"
                     android:layout_marginTop="4dp" />
@@ -76,7 +73,6 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- Settings Section -->
         <TextView
             android:id="@+id/settingsLabel"
             android:layout_width="wrap_content"
@@ -119,6 +115,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_nav_profile"
+                        app:tint="@color/text_primary"
                         android:contentDescription="Edit Profile" />
 
                     <TextView
@@ -158,6 +155,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_logout"
+                        app:tint="@color/text_secondary"
                         android:contentDescription="Logout" />
 
                     <TextView
@@ -166,9 +164,42 @@
                         android:layout_weight="1"
                         android:text="Logout"
                         android:textSize="16sp"
-                        android:textColor="@color/error"
+                        android:textColor="@color/text_secondary"
                         android:layout_marginStart="16dp" />
 
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/divider"
+                    android:layout_marginStart="56dp" />
+
+                <LinearLayout
+                    android:id="@+id/btnDeleteAccount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_delete"
+                        app:tint="#D32F2F"
+                        android:contentDescription="Delete Account" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Delete Account"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#D32F2F"
+                        android:layout_marginStart="16dp" />
                 </LinearLayout>
 
             </LinearLayout>

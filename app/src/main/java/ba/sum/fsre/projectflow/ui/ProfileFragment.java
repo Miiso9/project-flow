@@ -52,19 +52,61 @@ public class ProfileFragment extends Fragment {
         tvUserEmail = view.findViewById(R.id.tvUserEmail);
         progressBar = view.findViewById(R.id.progressBar);
 
+        // Edit Profile
         view.findViewById(R.id.btnEditProfile).setOnClickListener(v -> {
             startActivity(new Intent(getActivity(), CompleteProfileActivity.class));
         });
 
+        // Logout
         view.findViewById(R.id.btnLogout).setOnClickListener(v -> {
             new AlertDialog.Builder(requireContext())
                     .setTitle("Logout")
                     .setMessage("Are you sure you want to logout?")
-                    .setPositiveButton("Logout", (dialog, which) -> {
-                        logout();
-                    })
+                    .setPositiveButton("Logout", (dialog, which) -> logout())
                     .setNegativeButton("Cancel", null)
                     .show();
+        });
+
+        // Delete Account
+        view.findViewById(R.id.btnDeleteAccount).setOnClickListener(v -> {
+            showDeleteAccountDialog();
+        });
+    }
+
+    private void showDeleteAccountDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Delete Account")
+                .setMessage("Are you sure? This will permanently delete your account and all associated data. This action cannot be undone.")
+                .setPositiveButton("DELETE", (dialog, which) -> {
+                    performAccountDeletion();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void performAccountDeletion() {
+        progressBar.setVisibility(View.VISIBLE);
+
+        SupabaseApi api = RetrofitClient.getClient(requireContext()).create(SupabaseApi.class);
+
+        // This calls the RPC function 'delete_user_account' we created in SQL
+        api.deleteAccount().enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                progressBar.setVisibility(View.GONE);
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Account deleted successfully", Toast.LENGTH_LONG).show();
+                    logout(); // Clear tokens and go to Login
+                } else {
+                    Toast.makeText(getContext(), "Failed to delete account. Please try again.", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -76,14 +118,13 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
-        progressBar.setVisibility(View.VISIBLE);
+        // Removed progress bar here to avoid flashing on every resume
+        // progressBar.setVisibility(View.VISIBLE);
 
         SupabaseApi api = RetrofitClient.getClient(requireContext()).create(SupabaseApi.class);
         api.getUserProfile("eq." + userId).enqueue(new Callback<List<User>>() {
             @Override
             public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                progressBar.setVisibility(View.GONE);
-
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     User user = response.body().get(0);
                     String fullName = "";
@@ -93,16 +134,12 @@ public class ProfileFragment extends Fragment {
 
                     tvUserName.setText(fullName.trim());
                     tvUserEmail.setText(user.email != null ? user.email : "");
-                } else {
-                    tvUserName.setText("User");
-                    tvUserEmail.setText("");
                 }
             }
 
             @Override
             public void onFailure(Call<List<User>> call, Throwable t) {
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(getContext(), "Failed to load profile", Toast.LENGTH_SHORT).show();
+                // Silent fail on profile load to not annoy user
             }
         });
     }
