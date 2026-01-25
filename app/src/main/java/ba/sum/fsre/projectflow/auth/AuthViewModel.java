@@ -6,6 +6,8 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import org.json.JSONObject;
+
 import ba.sum.fsre.projectflow.model.AuthResponse;
 import ba.sum.fsre.projectflow.model.LoginRequest;
 import ba.sum.fsre.projectflow.model.RegisterRequest;
@@ -21,6 +23,7 @@ public class AuthViewModel extends ViewModel {
 
     private final MutableLiveData<Boolean> authSuccess = new MutableLiveData<>();
     private final MutableLiveData<Boolean> profileCompleted = new MutableLiveData<>();
+    private final MutableLiveData<String> authError = new MutableLiveData<>();
 
     public LiveData<Boolean> getAuthSuccess() {
         return authSuccess;
@@ -28,6 +31,10 @@ public class AuthViewModel extends ViewModel {
 
     public LiveData<Boolean> getProfileCompleted() {
         return profileCompleted;
+    }
+
+    public LiveData<String> getAuthError() {
+        return authError;
     }
 
     public void login(Context context, String email, String password) {
@@ -44,9 +51,9 @@ public class AuthViewModel extends ViewModel {
                             TokenManager tm = new TokenManager(context);
                             tm.saveToken(response.body().accessToken);
                             tm.saveRefreshToken(response.body().refreshToken);
-                            
+
                             RetrofitClient.resetClient();
-                            
+
                             if (response.body().user != null && response.body().user.id != null) {
                                 tm.saveUserId(response.body().user.id);
                                 checkProfileCompletion(context, response.body().user.id);
@@ -55,12 +62,15 @@ public class AuthViewModel extends ViewModel {
                                 profileCompleted.postValue(true);
                             }
                         } else {
+                            String errorMsg = parseError(response);
+                            authError.postValue(errorMsg);
                             authSuccess.postValue(false);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<AuthResponse> call, Throwable t) {
+                        authError.postValue("Network connection failed: " + t.getMessage());
                         authSuccess.postValue(false);
                     }
                 });
@@ -113,22 +123,25 @@ public class AuthViewModel extends ViewModel {
                             TokenManager tm = new TokenManager(context);
                             tm.saveToken(response.body().accessToken);
                             tm.saveRefreshToken(response.body().refreshToken);
-                            
+
                             if (response.body().user != null && response.body().user.id != null) {
                                 tm.saveUserId(response.body().user.id);
                             }
-                            
+
                             RetrofitClient.resetClient();
-                            
+
                             authSuccess.postValue(true);
                             profileCompleted.postValue(false);
                         } else {
+                            String errorMsg = parseError(response);
+                            authError.postValue(errorMsg);
                             authSuccess.postValue(false);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<AuthResponse> call, Throwable t) {
+                        authError.postValue("Network connection failed");
                         authSuccess.postValue(false);
                     }
                 });
@@ -138,5 +151,25 @@ public class AuthViewModel extends ViewModel {
         TokenManager tm = new TokenManager(context);
         tm.clearTokens();
         authSuccess.postValue(false);
+    }
+
+    private String parseError(Response<?> response) {
+        try {
+            if (response.errorBody() != null) {
+                String errorBodyString = response.errorBody().string();
+                JSONObject jsonObject = new JSONObject(errorBodyString);
+
+                if (jsonObject.has("msg")) {
+                    return jsonObject.getString("msg");
+                } else if (jsonObject.has("error_description")) {
+                    return jsonObject.getString("error_description");
+                } else if (jsonObject.has("message")) {
+                    return jsonObject.getString("message");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "An unknown error occurred.";
     }
 }
