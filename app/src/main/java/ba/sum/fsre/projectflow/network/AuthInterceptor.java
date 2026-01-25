@@ -5,6 +5,7 @@ import android.content.Intent;
 
 import java.io.IOException;
 
+import ba.sum.fsre.projectflow.BuildConfig;
 import ba.sum.fsre.projectflow.auth.AuthActivity;
 import ba.sum.fsre.projectflow.model.AuthResponse;
 import ba.sum.fsre.projectflow.model.RefreshTokenRequest;
@@ -26,6 +27,9 @@ public class AuthInterceptor implements Interceptor {
         this.context = context.getApplicationContext();
         this.tokenManager = new TokenManager(this.context);
     }
+
+    String url = BuildConfig.SUPABASE_URL;
+    String key = BuildConfig.SUPABASE_ANON_KEY;
 
     @Override
     public Response intercept(Chain chain) throws IOException {
@@ -72,13 +76,13 @@ public class AuthInterceptor implements Interceptor {
             OkHttpClient cleanClient = new OkHttpClient.Builder()
                     .addInterceptor(chain -> chain.proceed(
                             chain.request().newBuilder()
-                                    .addHeader("apikey", Constants.ANON_KEY)
+                                    .addHeader("apikey", key)
                                     .build()
                     ))
                     .build();
 
             Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl(Constants.BASE_URL + "/")
+                    .baseUrl(url + "/")
                     .client(cleanClient)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();

@@ -1,3 +1,12 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -25,13 +34,13 @@ android {
         buildConfigField(
             "String",
             "SUPABASE_URL",
-            "\"https://YOUR_PROJECT_ID.supabase.co\""
+            "\"${localProperties.getProperty("SUPABASE_URL")}\""
         )
 
         buildConfigField(
             "String",
             "SUPABASE_ANON_KEY",
-            "\"YOUR_PUBLIC_ANON_KEY\""
+            "\"${localProperties.getProperty("SUPABASE_ANON_KEY")}\""
         )
     }
 

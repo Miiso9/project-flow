@@ -7,8 +7,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.List;
+
+import ba.sum.fsre.projectflow.BuildConfig;
 import ba.sum.fsre.projectflow.model.Document;
-import ba.sum.fsre.projectflow.network.Constants;
 import ba.sum.fsre.projectflow.network.SupabaseApi;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -20,6 +21,9 @@ import retrofit2.Response;
 public class DocumentRepository {
     private SupabaseApi api;
     private Context context;
+
+    String url = BuildConfig.SUPABASE_URL;
+    String key = BuildConfig.SUPABASE_ANON_KEY;
 
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
@@ -77,7 +81,7 @@ public class DocumentRepository {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
-                    String fullUrl = Constants.BASE_URL + "/storage/v1/object/public/task_documents/" + storagePath;
+                    String fullUrl = url + "/storage/v1/object/public/task_documents/" + storagePath;
 
                     Document doc = new Document(taskId, projectId, userId, fullUrl, fileName);
                     createDocumentRecord(doc, callback);

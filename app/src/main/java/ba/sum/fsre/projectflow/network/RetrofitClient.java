@@ -1,6 +1,8 @@
 package ba.sum.fsre.projectflow.network;
 
 import android.content.Context;
+
+import ba.sum.fsre.projectflow.BuildConfig;
 import ba.sum.fsre.projectflow.storage.TokenManager;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -11,6 +13,9 @@ public class RetrofitClient {
 
     private static Retrofit retrofit;
     private static Context appContext;
+
+    static String url = BuildConfig.SUPABASE_URL;
+    static String key = BuildConfig.SUPABASE_ANON_KEY;
 
     public static void resetClient() {
         retrofit = null;
@@ -24,7 +29,7 @@ public class RetrofitClient {
             OkHttpClient client = new OkHttpClient.Builder()
                     .addInterceptor(chain -> chain.proceed(
                             chain.request().newBuilder()
-                                    .addHeader("apikey", Constants.ANON_KEY)
+                                    .addHeader("apikey", key)
                                     .addHeader("Prefer", "return=representation")
                                     .build()
                     ))
@@ -36,7 +41,7 @@ public class RetrofitClient {
                     .build();
 
             retrofit = new Retrofit.Builder()
-                    .baseUrl(Constants.BASE_URL + "/")
+                    .baseUrl(url + "/")
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
